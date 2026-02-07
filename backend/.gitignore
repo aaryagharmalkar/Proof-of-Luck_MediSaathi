@@ -1,0 +1,27 @@
+# Environment (do not commit secrets)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+*.egg-info/
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# ChromaDB persistence (reports router)
+chroma_reports/
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+*.log

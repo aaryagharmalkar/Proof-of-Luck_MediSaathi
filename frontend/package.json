@@ -1,0 +1,14 @@
+{
+  "name": "medisaathi-frontend",
+  "version": "0.1.0",
+  "description": "MediSaathi frontends (website + mobile)",
+  "private": true,
+  "scripts": {
+    "website": "cd website && npm run dev",
+    "website:setup": "cd website && npm install",
+    "website:build": "cd website && npm run build",
+    "mobile": "cd mobile && npx expo start --clear",
+    "mobile:setup": "cd mobile && npm install",
+    "setup": "npm run website:setup && npm run mobile:setup"
+  }
+}

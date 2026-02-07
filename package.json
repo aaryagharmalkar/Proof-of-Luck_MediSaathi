@@ -1,0 +1,46 @@
+{
+  "name": "medisaathi",
+  "version": "0.1.0",
+  "description": "AI-powered healthcare companion",
+  "private": true,
+  "scripts": {
+    "help": "node -e \"console.log('\\n🏥 MediSaathi - Available Commands\\n\\nSetup:\\n  npm run setup              - Complete setup (backend + frontend)\\n  npm run backend:setup      - Setup backend only\\n  npm run frontend:setup     - Setup frontend only\\n\\nRun:\\n  npm run dev                - Run both backend and frontend\\n  npm run backend            - Run backend server\\n  npm run frontend:website   - Run website (Vite)\n  npm run frontend:mobile    - Run mobile (Expo)\\n\\nUtility:\\n  npm run clean              - Clean dependencies and caches\\n  npm run backend:install    - Reinstall backend dependencies\\n  npm run frontend:install   - Reinstall frontend dependencies\\n')\"",
+    "setup": "npm run backend:setup && npm run frontend:setup",
+    "backend:setup": "cd backend && python3 -m venv venv && npm run backend:activate-and-install",
+    "backend:activate-and-install": "cd backend && bash -c 'source venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org' || powershell -Command \"& { .\\venv\\Scripts\\Activate.ps1; pip install --upgrade pip; pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org }\"",
+    "frontend:setup": "cd frontend && npm install --legacy-peer-deps",
+    "dev": "echo '🚀 Starting MediSaathi...' && echo '📝 Run backend and frontend in separate terminals:' && echo '  Terminal 1: npm run backend' && echo '  Terminal 2: npm run frontend'",
+    "backend": "cd backend && bash START_BACKEND.sh || powershell -Command \"& { .\\venv\\Scripts\\Activate.ps1; uvicorn app.main:app --reload --host 0.0.0.0 --port 5050 }\"",
+    "frontend": "cd frontend/website && npm run dev",
+    "frontend:website": "cd frontend/website && npm run dev",
+    "frontend:mobile": "cd frontend/mobile && npx expo start --clear",
+    "clean": "npm run backend:clean && npm run frontend:clean",
+    "backend:clean": "bash -c 'cd backend && rm -rf venv __pycache__ app/__pycache__ app/routers/__pycache__' || powershell -Command \"& { cd backend; Remove-Item -Recurse -Force venv,__pycache__,'app/__pycache__','app/routers/__pycache__' -ErrorAction SilentlyContinue }\"",
+    "frontend:clean": "bash -c 'cd frontend && rm -rf node_modules .expo package-lock.json' || powershell -Command \"& { cd frontend; Remove-Item -Recurse -Force node_modules,.expo,package-lock.json -ErrorAction SilentlyContinue }\"",
+    "backend:install": "cd backend && bash -c 'source venv/bin/activate && pip install --upgrade pip && pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org --force-reinstall' || powershell -Command \"& { cd backend; .\\venv\\Scripts\\Activate.ps1; pip install --upgrade pip; pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org --force-reinstall }\"",
+    "frontend:install": "cd frontend && npm run clean && npm install --legacy-peer-deps"
+  },
+  "keywords": [
+    "healthcare",
+    "ai",
+    "react-native",
+    "fastapi",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@radix-ui/react-alert-dialog": "^1.1.15",
+    "@tanstack/react-query": "^5.90.20",
+    "axios": "^1.13.4",
+    "framer-motion": "^12.29.2",
+    "lucide-react": "^0.563.0",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.13.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.24",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
+  }
+}

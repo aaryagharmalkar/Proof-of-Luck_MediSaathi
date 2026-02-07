@@ -1,0 +1,47 @@
+# ===============================
+# Core API
+# ===============================
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# ===============================
+# Auth (Supabase + JWT)
+# ===============================
+supabase>=2.4.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# ===============================
+# Environment & Settings
+# ===============================
+python-dotenv>=1.0.0
+pydantic>=2.9.0
+pydantic-settings>=2.5.0
+
+# ===============================
+# HTTP Clients (Groq + internal calls)
+# ===============================
+requests>=2.32.0
+httpx>=0.27.0
+
+# ===============================
+# Vector Database (Reports)
+# ===============================
+chromadb>=0.5.5
+
+# ===============================
+# File / Upload Support
+# ===============================
+python-multipart>=0.0.9
+
+# ===============================
+# Image Processing (Prescription Extraction)
+# ===============================
+Pillow>=10.0.0
+google-generativeai>=0.4.0
+PyMuPDF>=1.23.0
+
+# ===============================
+# Performance (optional but recommended)
+# ===============================
+orjson>=3.10.0

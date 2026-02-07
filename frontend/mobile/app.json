@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "MediSaathi",
+    "slug": "medisaathi-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "medisaathi",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.medisaathi.mobile"
+    },
+    "android": {
+      "package": "com.medisaathi.mobile"
+    }
+  }
+}
