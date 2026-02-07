@@ -5,6 +5,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    # MongoDB (legacy; not used in current code paths)
+    mongodb_url: str | None = None
+    mongodb_db_name: str = "medisaathi"
+
     # Supabase
     supabase_url: str
     supabase_key: str
@@ -30,6 +34,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 settings = Settings()

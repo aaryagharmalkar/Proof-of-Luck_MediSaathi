@@ -42,6 +42,50 @@ async def get_me(current_user=Depends(get_current_user)):
     return {"user": current_user}
 
 
+@router.get("/auth/profile")
+async def get_profile(current_user=Depends(get_current_user)):
+    """Get the current user's profile from profiles table."""
+    try:
+        result = supabase.table("profiles").select("*").eq("user_id", current_user.id).maybe_single().execute()
+        return result.data or {}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ProfileUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    location: Optional[str] = None
+    avatar: Optional[str] = None
+    health_profile: Optional[Dict] = None
+    questionnaire_responses: Optional[Dict] = None
+    primary_doctor: Optional[Dict] = None
+    emergency_contact: Optional[Dict] = None
+    setup_completed: Optional[bool] = None
+
+
+@router.patch("/auth/profile")
+async def update_profile(data: ProfileUpdateRequest, current_user=Depends(get_current_user)):
+    """Partially update the current user's profile."""
+    try:
+        update_data = data.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        update_data["updated_at"] = datetime.utcnow().isoformat()
+        result = supabase.table("profiles").update(update_data).eq("user_id", current_user.id).execute()
+        if not result.data:
+            # No row yet: upsert with user_id
+            update_data["user_id"] = current_user.id
+            supabase.table("profiles").upsert(update_data, on_conflict="user_id").execute()
+            result = supabase.table("profiles").select("*").eq("user_id", current_user.id).single().execute()
+        return result.data[0] if result.data else {}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class HealthProfile(BaseModel):
     hemoglobin: Optional[float] = None
     blood_pressure: Optional[str] = None

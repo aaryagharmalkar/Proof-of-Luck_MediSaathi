@@ -34,39 +34,30 @@ help:
 	@echo "   Example: npm run backend, npm run frontend:website, npm run frontend:mobile"
 
 # Complete setup
-setup: backend-setup frontend-setup
-	@echo "✅ Setup complete!"
-	@echo "   Website: make frontend-website"
-	@echo "   Mobile:  make frontend-mobile"
-	@echo "   Backend: make backend"
+setup:
+	npm run setup
 
 # Backend setup
 backend-setup:
 	@echo "🐍 Setting up backend..."
-	@cd backend && \
-	if [ ! -d "venv" ]; then \
-		$(PYTHON) -m venv venv; \
-	fi && \
-	. venv/bin/activate && \
-	pip install --upgrade pip && \
-	pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
+	npm run backend:setup
 	@echo "✅ Backend setup complete!"
-	@echo "⚠️  Create backend/.env with Supabase (and other) credentials"
 
 # Frontend setup (both website and mobile)
-frontend-setup: frontend-website-setup frontend-mobile-setup
+frontend-setup:
+	npm run frontend:setup
 	@echo "✅ Frontend setup complete (website + mobile)!"
 
 # Website frontend setup
 frontend-website-setup:
 	@echo "🌐 Setting up website frontend..."
-	@cd frontend/website && npm install
+	npm run frontend:website:setup
 	@echo "✅ Website frontend setup complete!"
 
 # Mobile frontend setup
 frontend-mobile-setup:
 	@echo "📱 Setting up mobile frontend (Expo)..."
-	@cd frontend/mobile && npm install
+	npm run frontend:mobile:setup
 	@echo "✅ Mobile frontend setup complete!"
 
 # Run backend + website (default dev experience)
@@ -77,25 +68,17 @@ dev:
 # Run backend only
 backend:
 	@echo "🐍 Starting backend server..."
-	@cd backend && \
-	if [ ! -f .env ]; then \
-		echo "❌ Error: .env file not found!"; \
-		echo "Please create backend/.env with your credentials"; \
-		exit 1; \
-	fi && \
-	. venv/bin/activate && \
-	uvicorn app.main:app --reload --host 0.0.0.0 --port 5050
+	npm run backend
 
 # Run website frontend only (Vite)
 frontend-website:
 	@echo "🌐 Starting website (Vite)..."
-	@cd frontend/website && npm run dev
+	npm run frontend:website
 
 # Run mobile frontend only (Expo)
 frontend-mobile:
 	@echo "📱 Starting mobile (Expo)..."
-	@echo "📱 Scan the QR code with Expo Go to run on device"
-	@cd frontend/mobile && npx expo start --clear
+	npm run frontend:mobile
 
 # Alias: frontend = website (backward compatibility)
 frontend: frontend-website
@@ -103,25 +86,13 @@ frontend: frontend-website
 # Clean all dependencies and caches
 clean:
 	@echo "🧹 Cleaning project..."
-	@rm -rf backend/venv
-	@rm -rf backend/__pycache__
-	@rm -rf backend/app/__pycache__
-	@rm -rf backend/app/routers/__pycache__
-	@rm -rf frontend/website/node_modules
-	@rm -rf frontend/mobile/node_modules
-	@rm -rf frontend/mobile/.expo
-	@rm -rf frontend/package-lock.json
-	@rm -rf frontend/website/package-lock.json
-	@rm -rf frontend/mobile/package-lock.json
+	npm run clean
 	@echo "✅ Project cleaned!"
 
 # Reinstall backend dependencies
 backend-install:
 	@echo "🐍 Reinstalling backend dependencies..."
-	@cd backend && \
-	. venv/bin/activate && \
-	pip install --upgrade pip && \
-	pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org --force-reinstall
+	npm run backend:install
 	@echo "✅ Backend dependencies reinstalled!"
 
 # Reinstall frontend dependencies (both)

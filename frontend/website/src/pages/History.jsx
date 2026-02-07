@@ -53,19 +53,19 @@ export default function History() {
 
   const loadData = async () => {
     try {
-      const [{ data: user }, { data: profile }, { data: records }, { data: appointments }, { data: medicines }] =
+      const [meRes, profileRes, recordsRes, appointmentsRes, medicinesRes] =
         await Promise.all([
-          api.get("/users/me"),
-          api.get("/health-profile/me"),
-          api.get("/health-records"),
+          api.get("/auth/me"),
+          api.get("/auth/profile"),
+          api.get("/health/records"),
           api.get("/appointments"),
           api.get("/medicines"),
         ]);
 
-      setProfile(profile);
-      setRecords(records || []);
-      setAppointments(appointments || []);
-      setMedicines(medicines || []);
+      setProfile(profileRes.data);
+      setRecords(recordsRes.data?.records ?? recordsRes.data ?? []);
+      setAppointments(Array.isArray(appointmentsRes.data) ? appointmentsRes.data : (appointmentsRes.data ?? []));
+      setMedicines(Array.isArray(medicinesRes.data) ? medicinesRes.data : (medicinesRes.data ?? []));
     } catch (err) {
       console.error("Failed to load history:", err);
     } finally {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/api/apiClient";
 import { useAuth } from "@/lib/AuthContext";
+import { useActiveMember } from "@/lib/ActiveMemberContext";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ import { motion } from "framer-motion";
 export default function Profile() {
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { activeMember, clearActiveMember } = useActiveMember();
 
   const [profile, setProfile] = useState(null);
   const [user, setUser] = useState(null);
@@ -42,15 +44,19 @@ export default function Profile() {
 
   const loadProfile = async () => {
     try {
-      const { data } = await api.get("/users/me");
-      if (!data) {
+      const [meRes, profileRes] = await Promise.all([
+        api.get("/auth/me"),
+        api.get("/auth/profile"),
+      ]);
+      const userData = meRes.data?.user ?? meRes.data;
+      const profileData = profileRes.data;
+      if (!userData) {
         navigate("/onboarding");
         return;
       }
-
-      setUser(data);
-      setProfile(data.profile);
-      setEditedProfile(data.profile);
+      setUser(userData);
+      setProfile(profileData);
+      setEditedProfile(profileData || {});
     } catch (err) {
       console.error("Failed to load profile:", err);
       if (err.response?.status === 401) {
@@ -67,7 +73,7 @@ export default function Profile() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const { data } = await api.put("/users/profile", editedProfile);
+      const { data } = await api.patch("/auth/profile", editedProfile);
       setProfile(data);
       setEditedProfile(data);
       setIsEditing(false);
@@ -102,7 +108,44 @@ export default function Profile() {
     );
   }
 
-  /* ------------------ UI ------------------ */
+  /* ------------------ VIEWING AS FAMILY MEMBER ------------------ */
+  if (activeMember) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+          <div className="bg-white rounded-xl p-6 border">
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-2xl font-bold">Viewing as family member</h1>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  clearActiveMember();
+                  loadProfile();
+                }}
+                className="text-teal-600 border-teal-200"
+              >
+                Switch to my account
+              </Button>
+            </div>
+            <div className="flex items-center gap-4">
+              <AvatarImage avatar={activeMember.avatar} className="w-20 h-20" />
+              <div>
+                <h2 className="text-2xl font-bold">{activeMember.name || "Family member"}</h2>
+                <p className="text-gray-500 capitalize">{activeMember.relation || activeMember.relationship || "Family member"}</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-gray-500">
+              You are viewing the profile for <strong>{activeMember.name}</strong>. Health data for this member will appear on the Dashboard and History when we support per-member data. Switch to your account to edit your own profile.
+            </p>
+          </div>
+          <EmergencyButton profile={null} />
+        </main>
+      </div>
+    );
+  }
+
+  /* ------------------ MY PROFILE UI ------------------ */
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -110,7 +153,7 @@ export default function Profile() {
         {/* Header */}
         <div className="bg-white rounded-xl p-6 border">
           <div className="flex justify-between mb-6">
-            <h1 className="text-2xl font-bold">Profile</h1>
+            <h1 className="text-2xl font-bold">My Profile</h1>
 
             {!isEditing ? (
               <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
@@ -137,9 +180,9 @@ export default function Profile() {
           </div>
 
           <div className="flex items-center gap-4">
-            <AvatarImage avatar={profile?.avatar_id} className="w-20 h-20" />
+            <AvatarImage avatar={profile?.avatar} className="w-20 h-20" />
             <div>
-              <h2 className="text-2xl font-bold">{profile?.name}</h2>
+              <h2 className="text-2xl font-bold">{safeDisplayValue(profile?.full_name) || safeDisplayValue(profile?.name) || "Profile"}</h2>
               <p className="text-gray-500">{user?.email}</p>
             </div>
           </div>
@@ -166,15 +209,21 @@ export default function Profile() {
         <ProfileSection icon={Stethoscope} title="Medical Information">
           <EditableRow
             label="Primary Doctor"
-            value={editedProfile?.primary_doctor}
+            value={typeof editedProfile?.primary_doctor === "object" ? editedProfile?.primary_doctor?.name : editedProfile?.primary_doctor}
             isEditing={isEditing}
-            onChange={(v) => setEditedProfile({ ...editedProfile, primary_doctor: v })}
+            onChange={(v) => setEditedProfile({
+              ...editedProfile,
+              primary_doctor: { ...(editedProfile?.primary_doctor || {}), name: v },
+            })}
           />
           <EditableRow
             label="Hospital"
-            value={editedProfile?.hospital}
+            value={typeof editedProfile?.primary_doctor === "object" ? editedProfile?.primary_doctor?.hospital : editedProfile?.hospital}
             isEditing={isEditing}
-            onChange={(v) => setEditedProfile({ ...editedProfile, hospital: v })}
+            onChange={(v) => setEditedProfile({
+              ...editedProfile,
+              primary_doctor: { ...(editedProfile?.primary_doctor || {}), hospital: v },
+            })}
           />
         </ProfileSection>
 
@@ -182,27 +231,30 @@ export default function Profile() {
         <ProfileSection icon={Phone} title="Emergency Contact">
           <EditableRow
             label="Name"
-            value={editedProfile?.emergency_contact_name}
+            value={typeof editedProfile?.emergency_contact === "object" ? editedProfile?.emergency_contact?.name : editedProfile?.emergency_contact_name}
             isEditing={isEditing}
-            onChange={(v) =>
-              setEditedProfile({ ...editedProfile, emergency_contact_name: v })
-            }
+            onChange={(v) => setEditedProfile({
+              ...editedProfile,
+              emergency_contact: { ...(editedProfile?.emergency_contact || {}), name: v },
+            })}
           />
           <EditableRow
             label="Phone"
-            value={editedProfile?.emergency_contact_phone}
+            value={typeof editedProfile?.emergency_contact === "object" ? editedProfile?.emergency_contact?.phone : editedProfile?.emergency_contact_phone}
             isEditing={isEditing}
-            onChange={(v) =>
-              setEditedProfile({ ...editedProfile, emergency_contact_phone: v })
-            }
+            onChange={(v) => setEditedProfile({
+              ...editedProfile,
+              emergency_contact: { ...(editedProfile?.emergency_contact || {}), phone: v },
+            })}
           />
           <EditableRow
             label="Relationship"
-            value={editedProfile?.emergency_contact_relationship}
+            value={typeof editedProfile?.emergency_contact === "object" ? editedProfile?.emergency_contact?.relationship : editedProfile?.emergency_contact_relationship}
             isEditing={isEditing}
-            onChange={(v) =>
-              setEditedProfile({ ...editedProfile, emergency_contact_relationship: v })
-            }
+            onChange={(v) => setEditedProfile({
+              ...editedProfile,
+              emergency_contact: { ...(editedProfile?.emergency_contact || {}), relationship: v },
+            })}
           />
         </ProfileSection>
 
@@ -240,28 +292,36 @@ function ProfileSection({ icon: Icon, title, children }) {
   );
 }
 
+function safeDisplayValue(value) {
+  if (value == null) return "";
+  if (typeof value === "object") return "";
+  return String(value);
+}
+
 function EditableRow({ label, value, isEditing, onChange }) {
+  const display = safeDisplayValue(value);
   return (
     <div className="flex justify-between items-center">
       <span className="text-gray-500">{label}</span>
       {isEditing ? (
         <Input
-          value={value || ""}
+          value={display}
           onChange={(e) => onChange(e.target.value)}
           className="w-40 text-right"
         />
       ) : (
-        <span className="font-medium">{value || "Not set"}</span>
+        <span className="font-medium">{display || "Not set"}</span>
       )}
     </div>
   );
 }
 
 function StaticRow({ label, value }) {
+  const display = safeDisplayValue(value);
   return (
     <div className="flex justify-between">
       <span className="text-gray-500">{label}</span>
-      <span className="font-medium capitalize">{value || "Not set"}</span>
+      <span className="font-medium capitalize">{display || "Not set"}</span>
     </div>
   );
 }

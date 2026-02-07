@@ -11,13 +11,13 @@ import { Calendar, Pill, FileText, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import api from "@/api/apiClient";
 import { useAuth } from "@/lib/AuthContext";
+import { useActiveMember } from "@/lib/ActiveMemberContext";
 
 export default function Dashboard() {
-  const activeMemberId = localStorage.getItem("active_member_id");
-const activeMemberName = localStorage.getItem("active_member_name");
-
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { activeMember } = useActiveMember();
+  const activeMemberName = activeMember?.name;
 
   const [profile, setProfile] = useState(null);
   const [appointments, setAppointments] = useState([]);
@@ -36,10 +36,13 @@ const activeMemberName = localStorage.getItem("active_member_name");
       // User profile (hackathon-safe)
 let profileData = null;
 try {
-  const res = await api.get("/users/me");
-  profileData = res.data;
+  const res = await api.get("/auth/me");
+  profileData = res.data?.user ?? res.data;
+  if (profileData) {
+    const profileRes = await api.get("/auth/profile").catch(() => ({ data: null }));
+    if (profileRes?.data) profileData = { ...profileData, ...profileRes.data };
+  }
 } catch {
-  // fallback so dashboard still works
   profileData = { name: "Guest User" };
 }
 setProfile(profileData);
@@ -60,12 +63,12 @@ setAppointments(localAppts);
 
 
       // Medicines
-      const { data: meds } = await api.get("/medicines?active=true");
-      setMedicines(meds || []);
+      const { data: meds } = await api.get("/medicines");
+      setMedicines(Array.isArray(meds) ? meds : (meds?.medicines ?? []));
 
       // Health records
-      const { data: recs } = await api.get("/health-records");
-      setRecords(recs || []);
+      const { data: recsRes } = await api.get("/health/records");
+      setRecords(recsRes?.records ?? (Array.isArray(recsRes) ? recsRes : []));
     } catch (err) {
       console.error("Dashboard load failed:", err);
       if (err.response?.status === 401) {
@@ -119,8 +122,8 @@ setAppointments(localAppts);
   animate={{ scale: 1 }}
   transition={{ duration: 0.4 }}
 >
-  {localStorage.getItem("active_member_name")
-    ? `How’s ${localStorage.getItem("active_member_name")} feeling today?`
+  {activeMemberName
+    ? `How’s ${activeMemberName} feeling today?`
     : "Hope you're feeling well today"}
 </motion.h1>
 

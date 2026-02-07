@@ -4,11 +4,13 @@ import re
 import io
 from typing import List
 
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from PIL import Image
 from dotenv import load_dotenv
 import google.generativeai as genai
+
+from app.controllers.auth_controller import get_current_user
 
 # Load environment
 load_dotenv()
@@ -279,6 +281,13 @@ def extract_medicines(file_bytes: bytes, filename: str) -> List[dict]:
 # ===============================
 # ENDPOINTS
 # ===============================
+
+
+@router.get("")
+def list_medicines(user=Depends(get_current_user)):
+    """List medicines for the current user. Placeholder until stored in DB."""
+    return []
+
 
 @router.post("/extract-file")
 async def extract_prescription(file: UploadFile = File(...)):

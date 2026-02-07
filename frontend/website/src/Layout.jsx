@@ -20,7 +20,7 @@ export default function Layout({ children, currentPageName }) {
 
   const loadProfile = async () => {
     try {
-      const { data } = await api.get("/health-profile/me");
+      const { data } = await api.get("/auth/profile");
       setProfile(data);
     } catch (error) {
       console.error("Error loading profile:", error);

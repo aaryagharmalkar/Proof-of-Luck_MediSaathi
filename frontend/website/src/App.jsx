@@ -6,6 +6,7 @@ import { queryClientInstance } from "@/lib/query-client";
 import { pagesConfig } from "./pages.config";
 import PageNotFound from "@/lib/PageNotFound";
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
+import { ActiveMemberProvider } from "@/lib/ActiveMemberContext";
 import UserNotRegisteredError from "@/components/UserNotRegisteredError";
 import AudioSummary from "@/pages/AudioSummary";
 import Appointments from "@/pages/Appointments";
@@ -56,6 +57,7 @@ const AuthenticatedApp = () => {
   }
 
   return (
+    <ActiveMemberProvider>
     <Routes>
       {/* Main page */}
       <Route
@@ -88,6 +90,7 @@ const AuthenticatedApp = () => {
       {/* 404 */}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </ActiveMemberProvider>
   );
 };
 

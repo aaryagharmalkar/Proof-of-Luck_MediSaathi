@@ -30,22 +30,57 @@ export default function Login() {
     confirmPassword: "",
     name: "",
   });
+  const [fieldErrors, setFieldErrors] = useState({});
 
-  /* ------------------ HANDLERS ------------------ */
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const minPasswordLength = 8;
+
+  const validate = () => {
+    const err = {};
+    if (isLogin) {
+      if (!formData.email.trim()) err.email = "Email is required";
+      else if (!emailRegex.test(formData.email.trim())) err.email = "Enter a valid email address";
+      if (!formData.password) err.password = "Password is required";
+    } else {
+      if (!formData.name.trim()) err.name = "Full name is required";
+      if (!formData.email.trim()) err.email = "Email is required";
+      else if (!emailRegex.test(formData.email.trim())) err.email = "Enter a valid email address";
+      if (!formData.password) err.password = "Password is required";
+      else if (formData.password.length < minPasswordLength)
+        err.password = `Password must be at least ${minPasswordLength} characters`;
+      if (formData.password !== formData.confirmPassword)
+        err.confirmPassword = "Passwords do not match";
+    }
+    setFieldErrors(err);
+    return Object.keys(err).length === 0;
+  };
+
+  const isFormValid = () => {
+    if (isLogin) return formData.email.trim() && formData.password;
+    return (
+      formData.name.trim() &&
+      formData.email.trim() &&
+      emailRegex.test(formData.email.trim()) &&
+      formData.password.length >= minPasswordLength &&
+      formData.password === formData.confirmPassword
+    );
+  };
 
   const updateFormData = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    setError(""); // Clear error on input
+    setError("");
     setFormInvalid(false);
+    setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setIsLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setError("");
+    setIsLoading(true);
 
-  try {
-    const endpoint = isLogin
+    try {
+      const endpoint = isLogin
       ? "/auth/signin"
       : "/auth/signup";
 
@@ -181,21 +216,26 @@ const handleSubmit = async (e) => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
                   <Input
                     id="name"
                     type="text"
                     placeholder="John Doe"
                     value={formData.name}
                     onChange={(e) => updateFormData("name", e.target.value)}
-                    className="mt-1"
+                    className={`mt-1 ${fieldErrors.name ? "border-red-500 ring-1 ring-red-200" : ""}`}
+                    aria-invalid={!!fieldErrors.name}
+                    aria-describedby={fieldErrors.name ? "name-error" : undefined}
                   />
+                  {fieldErrors.name && (
+                    <p id="name-error" className="mt-1 text-sm text-red-600">{fieldErrors.name}</p>
+                  )}
                 </motion.div>
               )}
 
               {/* Email */}
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email <span className="text-red-500">*</span></Label>
                 <div className="relative mt-1">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
@@ -204,25 +244,30 @@ const handleSubmit = async (e) => {
                     placeholder="you@example.com"
                     value={formData.email}
                     onChange={(e) => updateFormData("email", e.target.value)}
-                    aria-invalid={formInvalid}
-                    className={`pl-10 ${formInvalid ? 'border-red-500 ring-1 ring-red-200' : ''}`}
+                    aria-invalid={formInvalid || !!fieldErrors.email}
+                    className={`pl-10 ${formInvalid || fieldErrors.email ? "border-red-500 ring-1 ring-red-200" : ""}`}
+                    aria-describedby={fieldErrors.email ? "email-error" : undefined}
                   />
                 </div>
+                {fieldErrors.email && (
+                  <p id="email-error" className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+                )}
               </div>
 
               {/* Password */}
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Password <span className="text-red-500">*</span></Label>
                 <div className="relative mt-1">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    placeholder={isLogin ? "••••••••" : `At least ${minPasswordLength} characters`}
                     value={formData.password}
                     onChange={(e) => updateFormData("password", e.target.value)}
-                    aria-invalid={formInvalid}
-                    className={`pl-10 pr-10 ${formInvalid ? 'border-red-500 ring-1 ring-red-200' : ''}`}
+                    aria-invalid={formInvalid || !!fieldErrors.password}
+                    className={`pl-10 pr-10 ${formInvalid || fieldErrors.password ? "border-red-500 ring-1 ring-red-200" : ""}`}
+                    aria-describedby={fieldErrors.password ? "password-error" : undefined}
                   />
                   <button
                     type="button"
@@ -236,6 +281,9 @@ const handleSubmit = async (e) => {
                     )}
                   </button>
                 </div>
+                {fieldErrors.password && (
+                  <p id="password-error" className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
+                )}
               </div>
 
               {/* Confirm Password (Signup only) */}
@@ -245,7 +293,7 @@ const handleSubmit = async (e) => {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Label htmlFor="confirmPassword">Confirm Password <span className="text-red-500">*</span></Label>
                   <div className="relative mt-1">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
@@ -256,9 +304,14 @@ const handleSubmit = async (e) => {
                       onChange={(e) =>
                         updateFormData("confirmPassword", e.target.value)
                       }
-                      className="pl-10"
+                      className={`pl-10 ${fieldErrors.confirmPassword ? "border-red-500 ring-1 ring-red-200" : ""}`}
+                      aria-invalid={!!fieldErrors.confirmPassword}
+                      aria-describedby={fieldErrors.confirmPassword ? "confirmPassword-error" : undefined}
                     />
                   </div>
+                  {fieldErrors.confirmPassword && (
+                    <p id="confirmPassword-error" className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>
+                  )}
                 </motion.div>
               )}
 
@@ -290,8 +343,8 @@ const handleSubmit = async (e) => {
               {/* Submit Button */}
               <Button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-teal-500 hover:bg-teal-600 text-white font-medium py-3"
+                disabled={isLoading || !isFormValid()}
+                className="w-full bg-teal-500 hover:bg-teal-600 text-white font-medium py-3 disabled:opacity-60"
               >
                 {isLoading ? (
                   <Loader2 className="w-5 h-5 animate-spin" />

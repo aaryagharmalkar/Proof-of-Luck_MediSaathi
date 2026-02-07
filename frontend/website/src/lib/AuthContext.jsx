@@ -14,7 +14,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const bootstrapAuth = async () => {
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem("token") || localStorage.getItem("access_token");
 
     if (!token) {
       setIsLoadingAuth(false);
@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
 
     try {
       const { data } = await api.get("/auth/me");
-      setUser(data);
+      setUser(data?.user ?? data);
       setIsAuthenticated(true);
     } catch (err) {
       clearSession();
@@ -35,24 +35,31 @@ export function AuthProvider({ children }) {
   const login = async (credentials) => {
     setAuthError(null);
     try {
-      const { data } = await api.post("/auth/login", credentials);
-      localStorage.setItem("access_token", data.access_token);
-      setUser(data.user);
+      const { data } = await api.post("/auth/signin", credentials);
+      const token = data.access_token;
+      if (token) {
+        localStorage.setItem("token", token);
+        localStorage.setItem("access_token", token);
+      }
+      setUser(data?.user ?? data);
       setIsAuthenticated(true);
-      return true;
+      return { ok: true, onboarding_completed: data?.onboarding_completed };
     } catch (err) {
-      setAuthError(err.response?.data?.message || "Login failed");
-      return false;
+      setAuthError(err.response?.data?.detail || err.response?.data?.message || "Login failed");
+      return { ok: false };
     }
   };
 
   const logout = () => {
-  localStorage.removeItem("token");
-  setUser(null);
-};
+    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
+    setUser(null);
+    setIsAuthenticated(false);
+  };
 
 
   const clearSession = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("access_token");
     setUser(null);
     setIsAuthenticated(false);

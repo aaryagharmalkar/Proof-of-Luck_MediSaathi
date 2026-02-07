@@ -36,7 +36,10 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 // Your prescription extraction API endpoint
-const PRESCRIPTION_API_URL = `${import.meta.env.VITE_API_URL || "http://localhost:5050/api/v1"}/medicines/extract-file`;
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${String(import.meta.env.VITE_API_URL).replace(/\/$/, "")}/api/v1`
+  : "http://localhost:5050/api/v1";
+const PRESCRIPTION_API_URL = `${API_BASE}/medicines/extract-file`;
 
 console.log("🔗 PRESCRIPTION_API_URL:", PRESCRIPTION_API_URL);
 
@@ -65,11 +68,14 @@ export default function Medicines() {
 
   const loadData = async () => {
     try {
-      const { data: user } = await api.get("/users/me");
-      setProfile(user.profile);
-
+      const { data: meData } = await api.get("/auth/me");
+      const user = meData?.user ?? meData;
+      if (user) {
+        const profileRes = await api.get("/auth/profile").catch(() => ({ data: null }));
+        setProfile(profileRes?.data ?? user.profile);
+      }
       const { data: meds } = await api.get("/medicines");
-      setMedicines(meds || []);
+      setMedicines(Array.isArray(meds) ? meds : (meds ?? []));
     } catch (err) {
       console.error("Failed to load medicines:", err);
     } finally {

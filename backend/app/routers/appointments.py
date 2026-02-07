@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 
 from app.appointments_store import (
@@ -6,8 +6,15 @@ from app.appointments_store import (
     book_slot,
     get_doctor,
 )
+from app.controllers.auth_controller import get_current_user
 
 router = APIRouter()
+
+
+@router.get("/appointments")
+def list_appointments(user=Depends(get_current_user)):
+    """List appointments for the current user. Placeholder until stored in DB."""
+    return []
 
 
 class AppointmentCreate(BaseModel):

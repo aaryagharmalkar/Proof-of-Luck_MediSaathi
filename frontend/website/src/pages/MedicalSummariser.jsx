@@ -147,8 +147,8 @@ export default function MedicalSummariser() {
 
     try {
       setIsLoadingUser(true);
-      const user = await fetchJSON("/users/me");
-      setUserProfile(user);
+      const me = await fetchJSON("/auth/me");
+      setUserProfile(me?.user ?? me);
     } catch (err) {
       console.warn("Failed to load user from API:", err.message);
 
@@ -579,10 +579,12 @@ export default function MedicalSummariser() {
 
   const saveHealthRecord = async (type, summary) => {
     try {
-      await api.post("/health-records", {
-        type,
-        summary,
+      await api.post("/health/records", {
+        metric: type,
+        value: 0,
+        unit: "summary",
         date: new Date().toISOString().split("T")[0],
+        notes: summary,
       });
       console.log("💾 Health record saved successfully");
     } catch (err) {

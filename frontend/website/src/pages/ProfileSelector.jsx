@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "@/api/apiClient";
+import { useActiveMember } from "@/lib/ActiveMemberContext";
+import { createPageUrl } from "@/utils";
 import { AvatarImage, avatars } from "@/components/ui/AvatarSelector";
 import AvatarSelector from "@/components/ui/AvatarSelector";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -13,8 +15,12 @@ import { Loader2 } from "lucide-react";
 
 export default function ProfileSelector() {
   const navigate = useNavigate();
+  const { setActiveMember, clearActiveMember, refreshMembers } = useActiveMember();
   const [members, setMembers] = useState(null);
   const [selected, setSelected] = useState(null);
+
+  /** Sentinel for "Me" (logged-in user's own profile) */
+  const ME_PROFILE = { id: "me", name: "Me", isMe: true };
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [newName, setNewName] = useState("");
@@ -47,9 +53,12 @@ export default function ProfileSelector() {
 
   const confirm = () => {
     if (!selected) return;
-    localStorage.setItem("active_member_id", selected.id);
-    localStorage.setItem("active_member_name", selected.name);
-    navigate("/dashboard");
+    if (selected.isMe) {
+      clearActiveMember();
+    } else {
+      setActiveMember(selected);
+    }
+    navigate(createPageUrl("dashboard"));
   };
 
   const openCreateDialog = () => {
@@ -87,8 +96,23 @@ export default function ProfileSelector() {
               </div>
             ) : members.length === 0 ? (
               <div className="py-12 text-center text-gray-500">
-                <div>No profiles found.</div>
-                <div className="mt-4 flex justify-center">
+                <div>No family members yet.</div>
+                <div className="mt-4 flex flex-wrap justify-center gap-6">
+                  <motion.div
+                    key="profile-me"
+                    onClick={() => selectMember(ME_PROFILE)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMember(ME_PROFILE); } }}
+                    whileHover={{ scale: 1.03 }}
+                    role="button"
+                    tabIndex={0}
+                    className={`group p-4 rounded-lg text-center transition-shadow border cursor-pointer flex flex-col items-center justify-center w-48 ${selected?.isMe ? "ring-2 ring-teal-400 bg-teal-50" : "hover:shadow-md"}`}
+                  >
+                    <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-full bg-teal-100 text-teal-600 text-2xl font-bold">Me</div>
+                    <div className="mt-3">
+                      <div className="font-medium text-gray-800">Me</div>
+                      <div className="text-xs text-gray-500">Use my own profile</div>
+                    </div>
+                  </motion.div>
                   <motion.div
                     key="add-profile-empty"
                     onClick={openCreateDialog}
@@ -114,6 +138,22 @@ export default function ProfileSelector() {
               </div>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                {/* Me (own profile) */}
+                <motion.div
+                  key="profile-me"
+                  onClick={() => selectMember(ME_PROFILE)}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectMember(ME_PROFILE); } }}
+                  whileHover={{ scale: 1.03 }}
+                  role="button"
+                  tabIndex={0}
+                  className={`group relative p-4 rounded-lg text-center transition-shadow border cursor-pointer ${selected?.isMe ? "ring-2 ring-teal-400 bg-teal-50" : "hover:shadow-md"}`}
+                >
+                  <div className="mx-auto w-24 h-24 flex items-center justify-center rounded-full bg-teal-100 text-teal-600 text-2xl font-bold">Me</div>
+                  <div className="mt-3">
+                    <div className="font-medium text-gray-800">Me</div>
+                    <div className="text-xs text-gray-500">Use my own profile</div>
+                  </div>
+                </motion.div>
                 {members.map((m) => (
                   <motion.div
                     key={m.id}
@@ -245,6 +285,7 @@ export default function ProfileSelector() {
 
                   setMembers((prev) => prev.map((m) => (m.id === editingMember.id ? updated : m)));
                   if (selected?.id === editingMember.id) setSelected(updated);
+                  refreshMembers();
                 } else {
                   // Try to create on server; fallback to local creation
                   let created;
@@ -258,6 +299,7 @@ export default function ProfileSelector() {
 
                   setMembers((prev) => [...prev, created]);
                   setSelected(created);
+                  refreshMembers();
                 }
 
                 setIsDialogOpen(false);
@@ -295,6 +337,7 @@ export default function ProfileSelector() {
               }
               setMembers((prev) => prev.filter((x) => x.id !== deletingMember.id));
               if (selected?.id === deletingMember.id) setSelected(null);
+              refreshMembers();
             } catch (err) {
               console.warn('Server delete failed', err);
               window.alert("Delete failed. Please try again.");

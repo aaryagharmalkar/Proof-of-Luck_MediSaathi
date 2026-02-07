@@ -4,6 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { motion, AnimatePresence } from 'framer-motion';
 
+function safeStr(v) {
+  if (v == null) return '';
+  if (typeof v === 'string' || typeof v === 'number') return String(v);
+  if (typeof v === 'object' && v !== null && typeof v.name === 'string') return v.name;
+  if (typeof v === 'object' && v !== null && typeof v.name === 'number') return String(v.name);
+  return '';
+}
+
 export default function EmergencyButton({ userProfile, profile }) {
   const p = userProfile || profile;
   const [isOpen, setIsOpen] = useState(false);
@@ -104,11 +112,11 @@ export default function EmergencyButton({ userProfile, profile }) {
                   <ul className="space-y-2 text-sm text-red-700">
                     <li className="flex items-center gap-2">
                       <Phone className="w-4 h-4" />
-                      <span>Emergency Contact: {p?.emergency_contact?.name || 'Not set'}</span>
+                      <span>Emergency Contact: {safeStr(p?.emergency_contact) || 'Not set'}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
-                      <span>Primary Doctor: {p?.primary_doctor?.name || 'Not set'}</span>
+                      <span>Primary Doctor: {safeStr(p?.primary_doctor) || 'Not set'}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Ambulance className="w-4 h-4" />
