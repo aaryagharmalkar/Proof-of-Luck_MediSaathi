@@ -87,9 +87,9 @@ def _clean_json(text: str) -> str:
 
 
 def _extract_from_image(image: Image.Image) -> List[dict]:
-    if not GEMINI_API_KEY:
+    if not (settings.gemini_api_key or "").strip():
         raise RuntimeError("GEMINI_API_KEY not configured")
-    
+
     prompt = """
 You are a medical prescription extraction system. Analyze this prescription image carefully.
 
@@ -163,25 +163,40 @@ EXTRACTION RULES:
    - If given in months, use 30 days per month
    - Default to 7 days if not specified
 
-IMPORTANT: Return ONLY the JSON array. No other text.
+IMPORTANT: Return ONLY the JSON array. No other text. If the image is not a prescription or no medicines are visible, return [].
 """
 
-    try:
-        response = model.generate_content([prompt, image])
-        response_text = response.text
-        cleaned = _clean_json(response_text)
-        medicines = json.loads(cleaned)
-        
-        if not isinstance(medicines, list):
-            medicines = [medicines]
-        
-        return medicines
-    except json.JSONDecodeError as e:
-        logger.warning("JSON decode error: %s", e)
-        return []
-    except Exception as e:
-        logger.warning("Error extracting from image: %s", e)
-        return []
+    safety_settings = [
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+    ]
+
+    for model_name in FALLBACK_MODELS:
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(
+                [prompt, image],
+                safety_settings=safety_settings,
+            )
+            if not response or not response.text:
+                continue
+            response_text = response.text
+            cleaned = _clean_json(response_text)
+            medicines = json.loads(cleaned)
+            if not isinstance(medicines, list):
+                medicines = [medicines]
+            return medicines
+        except json.JSONDecodeError as e:
+            logger.warning("JSON decode error (model %s): %s", model_name, e)
+            continue
+        except Exception as e:
+            logger.warning("Error extracting from image (model %s): %s", model_name, e)
+            continue
+
+    logger.warning("All models failed for prescription image extraction")
+    return []
 
 
 def _validate_and_fix_medicines(medicines: List[dict]) -> List[dict]:
@@ -251,8 +266,11 @@ def _validate_and_fix_medicines(medicines: List[dict]) -> List[dict]:
         if frequency not in ["Daily", "Alternate Days"]:
             frequency = "Daily"
 
+        name = (med.get("name") or "").strip()
+        if not name:
+            continue
         validated.append({
-            "name": med.get("name", ""),
+            "name": name,
             "type": med_type,
             "intakeTimes": cleaned_intake_times,
             "customTimes": med.get("customTimes", []),
@@ -532,7 +550,7 @@ async def get_medicine_info(
     """
     Get detailed information about a medicine using Gemini AI.
     """
-    if not GEMINI_API_KEY:
+    if not (settings.gemini_api_key or "").strip():
         raise HTTPException(status_code=500, detail="Gemini API key not configured")
 
     prompt = f"""
