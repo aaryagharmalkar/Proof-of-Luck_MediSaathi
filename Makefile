@@ -1,4 +1,4 @@
-.PHONY: help install setup clean dev backend frontend frontend-website frontend-mobile backend-setup frontend-setup frontend-website-setup frontend-mobile-setup backend-install frontend-install
+.PHONY: help install setup clean dev backend frontend frontend-website backend-setup frontend-setup frontend-website-setup backend-install frontend-install
 
 # Python: python3 on macOS/Linux, python on Windows
 ifeq ($(OS),Windows_NT)
@@ -12,26 +12,24 @@ help:
 	@echo "🏥 MediSaathi - Available Commands"
 	@echo ""
 	@echo "Setup Commands:"
-	@echo "  make setup                    - Complete setup (backend + both frontends)"
+	@echo "  make setup                    - Complete setup (backend + frontend)"
 	@echo "  make backend-setup            - Setup backend only (venv + dependencies)"
-	@echo "  make frontend-setup           - Setup both frontends (website + mobile)"
+	@echo "  make frontend-setup           - Setup frontend (website)"
 	@echo "  make frontend-website-setup   - Setup website frontend only"
-	@echo "  make frontend-mobile-setup     - Setup mobile (Expo) frontend only"
 	@echo ""
 	@echo "Run Commands:"
 	@echo "  make dev                     - Run backend + website frontend"
 	@echo "  make backend                 - Run backend server only"
 	@echo "  make frontend-website        - Run website (Vite) only"
-	@echo "  make frontend-mobile         - Run mobile (Expo) only"
 	@echo "  make frontend                - Alias for frontend-website"
 	@echo ""
 	@echo "Utility Commands:"
 	@echo "  make clean                   - Clean all dependencies and caches"
 	@echo "  make backend-install         - Reinstall backend dependencies"
-	@echo "  make frontend-install        - Reinstall both frontend dependencies"
+	@echo "  make frontend-install        - Reinstall frontend dependencies"
 	@echo ""
 	@echo "📝 Windows Users: Use 'npm run <command>' from package.json where applicable"
-	@echo "   Example: npm run backend, npm run frontend:website, npm run frontend:mobile"
+	@echo "   Example: npm run backend, npm run frontend:website"
 
 # Complete setup
 setup:
@@ -43,22 +41,16 @@ backend-setup:
 	npm run backend:setup
 	@echo "✅ Backend setup complete!"
 
-# Frontend setup (both website and mobile)
+# Frontend setup (website)
 frontend-setup:
 	npm run frontend:setup
-	@echo "✅ Frontend setup complete (website + mobile)!"
+	@echo "✅ Frontend setup complete!"
 
 # Website frontend setup
 frontend-website-setup:
 	@echo "🌐 Setting up website frontend..."
 	npm run frontend:website:setup
 	@echo "✅ Website frontend setup complete!"
-
-# Mobile frontend setup
-frontend-mobile-setup:
-	@echo "📱 Setting up mobile frontend (Expo)..."
-	npm run frontend:mobile:setup
-	@echo "✅ Mobile frontend setup complete!"
 
 # Run backend + website (default dev experience)
 dev:
@@ -75,11 +67,6 @@ frontend-website:
 	@echo "🌐 Starting website (Vite)..."
 	npm run frontend:website
 
-# Run mobile frontend only (Expo)
-frontend-mobile:
-	@echo "📱 Starting mobile (Expo)..."
-	npm run frontend:mobile
-
 # Alias: frontend = website (backward compatibility)
 frontend: frontend-website
 
@@ -95,8 +82,8 @@ backend-install:
 	npm run backend:install
 	@echo "✅ Backend dependencies reinstalled!"
 
-# Reinstall frontend dependencies (both)
-frontend-install: frontend-website-setup frontend-mobile-setup
+# Reinstall frontend dependencies
+frontend-install: frontend-website-setup
 	@echo "✅ Frontend dependencies reinstalled!"
 
 # Install (alias for setup)

@@ -1,12 +1,10 @@
 import axios from "axios";
-
-const base = import.meta.env.VITE_API_URL
-  ? `${String(import.meta.env.VITE_API_URL).replace(/\/$/, "")}/api/v1`
-  : "http://localhost:5050/api/v1";
+import { getApiBaseUrl } from "./baseUrl";
 
 const api = axios.create({
-  baseURL: base,
+  baseURL: getApiBaseUrl(),
   withCredentials: true,
+  timeout: 30000,
 });
 
 /* ------------------ REQUEST INTERCEPTOR ------------------ */
@@ -29,13 +27,20 @@ api.interceptors.response.use(
       localStorage.removeItem("token");
       localStorage.removeItem("access_token");
       const reqUrl = error.config?.url || "";
-      // Don't auto-redirect when the failing request is signin/signup
-      if (!reqUrl.includes("/auth/signin") && !reqUrl.includes("/auth/signup")) {
-        if (window.location.pathname !== "/login") {
+      const isBackgroundRequest = 
+        reqUrl.includes("/auth/me") || 
+        reqUrl.includes("/auth/profile") || 
+        reqUrl.includes("/members") || 
+        reqUrl.includes("/doctors/me");
+
+      if (!reqUrl.includes("/auth/signin") && !reqUrl.includes("/auth/signup") && !isBackgroundRequest) {
+        const path = window.location.pathname;
+        if (path.startsWith("/doctor-dashboard")) {
+          if (path !== "/doctor-login") window.location.href = "/doctor-login";
+        } else if (path !== "/login") {
           window.location.href = "/login";
         }
       }
-      // otherwise allow the calling code (e.g. Login form) to handle error
     }
     return Promise.reject(error);
   }

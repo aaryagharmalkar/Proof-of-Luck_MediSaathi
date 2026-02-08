@@ -76,45 +76,52 @@ export default function HealthCalendar({ appointments = [], medicines = [], comp
                          currentDate.getFullYear() === today.getFullYear();
 
   return (
-  
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="relative group bg-white rounded-[2rem] p-8 border border-white shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 font-sans">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-teal-50 to-blue-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-70 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-50 rounded-full blur-3xl -ml-20 -mb-20 opacity-50 pointer-events-none" />
+
       {/* Header */}
-      <div className="bg-gradient-to-r from-teal-500 to-teal-600 px-6 py-4 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold">Your Health Calendar</h2>
-            <p className="text-teal-50 text-sm mt-1">Track appointments and medications</p>
-          </div>
-          <button
-            onClick={() => navigate('/doctor-scheduler')}
-            className="bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Event
-          </button>
+      <div className="relative z-10 flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            Health Calendar
+          </h2>
+          <p className="text-gray-500 text-sm mt-1">Schedule & Reminders</p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+             <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/doctor-scheduler')}
+                className="bg-gray-900 text-white p-2.5 rounded-xl hover:bg-gray-800 transition-colors shadow-lg hover:shadow-xl"
+            >
+                <Plus className="w-5 h-5" />
+            </motion.button>
         </div>
       </div>
 
-      <div className={cn(compact ? 'p-4' : 'p-6')}>
+      <div className={cn("relative z-10", compact ? 'p-0' : 'p-2')}>
         {/* Calendar Header */}
-        <div className={cn("flex items-center justify-between", compact ? 'mb-3' : 'mb-6')}>
-          <h3 className={cn("font-semibold text-gray-900", compact ? 'text-sm' : 'text-lg')}>{monthYear}</h3>
-          <div className="flex gap-2">
+        <div className={cn("flex items-center justify-between", compact ? 'mb-4' : 'mb-8')}>
+          <h3 className={cn("font-medium text-gray-900", compact ? 'text-base' : 'text-lg')}>{monthYear}</h3>
+          <div className="flex gap-2 bg-gray-50 p-1 rounded-lg border border-gray-100">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handlePrevMonth}
-              className={cn("rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors", compact ? 'w-8 h-8' : 'w-10 h-10')}
+              className={cn("rounded-md flex items-center justify-center hover:bg-white hover:shadow-sm transition-all text-gray-500", compact ? 'w-8 h-8' : 'w-9 h-9')}
             >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
+              <ChevronLeft className="w-5 h-5" />
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleNextMonth}
-              className={cn("rounded-lg border border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors", compact ? 'w-8 h-8' : 'w-10 h-10')}
+              className={cn("rounded-md flex items-center justify-center hover:bg-white hover:shadow-sm transition-all text-gray-500", compact ? 'w-8 h-8' : 'w-9 h-9')}
             >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
+              <ChevronRight className="w-5 h-5" />
             </motion.button>
           </div>
         </div>
@@ -122,9 +129,9 @@ export default function HealthCalendar({ appointments = [], medicines = [], comp
         {/* Calendar Grid */}
         <div>
           {/* Day Headers */}
-          <div className={cn('grid grid-cols-7 gap-2 mb-2', compact ? 'gap-1 mb-1' : '')}>
+          <div className={cn('grid grid-cols-7 gap-2 mb-4', compact ? 'gap-1 mb-2' : '')}>
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className={cn('text-center text-xs font-medium text-gray-500', compact ? 'py-1' : 'py-2')}>
+              <div key={day} className={cn('text-center text-xs font-medium text-gray-400 uppercase tracking-wide', compact ? 'py-1' : 'py-2')}>
                 {day}
               </div>
             ))}
@@ -134,7 +141,7 @@ export default function HealthCalendar({ appointments = [], medicines = [], comp
           <div className="grid grid-cols-7 gap-2">
             {/* Empty cells for days before month starts */}
             {Array.from({ length: firstDay }).map((_, index) => (
-              <div key={`empty-${index}`} className={compact ? 'w-8 h-8' : ''} />
+              <div key={`empty-${index}`} className={compact ? 'w-9 h-9' : ''} />
             ))}
 
             {/* Actual days */}
@@ -145,72 +152,57 @@ export default function HealthCalendar({ appointments = [], medicines = [], comp
               const events = getDayEvents(day);
 
               return (
-                <motion.button
+                <button
                   key={day}
                   onClick={() => handleDateSelect(day)}
-                  className="relative"
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.95 }}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.008 }}
+                  className="relative group outline-none"
                 >
                   <div
                     className={cn(
-                      compact ? 'w-9 h-9 rounded-md flex items-center justify-center text-xs font-medium transition-all duration-200' : 'w-full aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium transition-all duration-200',
-                      isSelected && 'bg-teal-500 text-white shadow-lg ring-2 ring-teal-200',
-                      !isSelected && isToday && 'bg-teal-50 text-teal-600 ring-2 ring-teal-300',
-                      !isSelected && !isToday && 'text-gray-700 hover:bg-gray-100'
+                      compact 
+                        ? 'w-10 h-10 rounded-xl flex items-center justify-center text-sm font-medium transition-all duration-200' 
+                        : 'w-full aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-medium transition-all duration-200',
+                      isSelected 
+                        ? 'bg-gray-900 text-white' 
+                        : isToday 
+                            ? 'bg-gray-100 text-gray-900' 
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     )}
                   >
                     <span>{day}</span>
                     
                     {/* Event Indicators */}
                     {(events.hasAppointments || events.hasMedicines) && !isSelected && (
-                      <div className={cn('flex gap-0.5', compact ? 'mt-0.5' : 'mt-1')}>
+                      <div className={cn('flex gap-1 absolute bottom-2 left-1/2 -translate-x-1/2')}>
                         {events.hasAppointments && (
-                          <div className={cn(compact ? 'w-1 h-1' : 'w-1.5 h-1.5', 'bg-blue-500 rounded-full')} />
+                          <div className={cn('w-1 h-1 bg-blue-500 rounded-full')} />
                         )}
                         {events.hasMedicines && (
-                          <div className={cn(compact ? 'w-1 h-1' : 'w-1.5 h-1.5', 'bg-green-500 rounded-full')} />
+                          <div className={cn('w-1 h-1 bg-teal-500 rounded-full')} />
                         )}
                       </div>
                     )}
                   </div>
-
-                  {/* Green dot for selected date */}
-                  <AnimatePresence>
-                    {isSelected && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        className="absolute -bottom-1 left-1/2 -translate-x-1/2"
-                      >
-                        <div className="w-2 h-2 bg-green-500 rounded-full shadow-lg" />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.button>
+                </button>
               );
             })}
           </div>
         </div>
 
         {/* Legend */}
-        <div className={cn('border-t border-gray-100', compact ? 'mt-4 pt-3' : 'mt-6 pt-4')}>
-          <div className={cn('flex items-center justify-center text-xs', compact ? 'gap-4' : 'gap-6')}>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-teal-50 border-2 border-teal-300 rounded" />
-              <span className="text-gray-600">Today</span>
-            </div>
+        <div className={cn('border-t border-gray-100', compact ? 'mt-4 pt-4' : 'mt-6 pt-6')}>
+          <div className={cn('flex items-center justify-center text-xs font-medium', compact ? 'gap-4' : 'gap-6')}>
+            {/* <div className="flex items-center gap-2">
+              <div className="w-2.5 h-2.5 bg-indigo-50 border border-indigo-200 rounded-full" />
+              <span className="text-slate-500">Today</span>
+            </div> */}
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full" />
-              <span className="text-gray-600">Appointment</span>
+              <span className="text-gray-500">Appointment</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
-              <span className="text-gray-600">Medicine</span>
+              <div className="w-2 h-2 bg-teal-500 rounded-full" />
+              <span className="text-gray-500">Medicine</span>
             </div>
           </div>
         </div>

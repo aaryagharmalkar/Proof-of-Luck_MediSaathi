@@ -8,66 +8,64 @@ import { motion } from 'framer-motion';
 const actions = [
   { 
     icon: Calendar, 
-    label: 'Add Appointment', 
+    label: 'Book Visit', 
     page: 'doctor-scheduler',
-    color: 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+    color: 'text-blue-600',
+    bg: 'bg-blue-50'
   },
   { 
     icon: Pill, 
-    label: 'Add Medicine', 
+    label: 'Add Meds', 
     page: 'medicines',
-    color: 'bg-green-50 text-green-600 hover:bg-green-100'
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50'
   },
   { 
     icon: FileText, 
-    label: 'Upload Report', 
+    label: 'Upload', 
     page: 'medical-summariser',
-    color: 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+    color: 'text-violet-600',
+    bg: 'bg-violet-50'
   },
   { 
     icon: MessageCircle, 
-    label: 'Talk to AI', 
+    label: 'AI Chat', 
     page: 'chatbot',
-    color: 'bg-teal-50 text-teal-600 hover:bg-teal-100'
+    color: 'text-orange-600',
+    bg: 'bg-orange-50'
   },
 ];
 
 export default function QuickActions() {
   return (
-    <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-      <h3 className="font-semibold text-gray-900 mb-3">Quick Actions</h3>
-      <div className="grid grid-cols-2 gap-3">
+    <div className="relative group bg-white rounded-[2rem] p-6 border border-white shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-50 to-blue-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-70 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-50 rounded-full blur-3xl -ml-12 -mb-12 opacity-50 pointer-events-none" />
+
+      <h3 className="relative z-10 font-bold text-gray-800 text-lg mb-4">Quick Actions</h3>
+      <div className="relative z-10 grid grid-cols-2 gap-4">
         {actions.map((action, idx) => (
-          <motion.div 
-            key={action.page} 
-            initial={{ opacity: 0, y: 6 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ delay: idx * 0.05, duration: 0.3 }}
+          <Link
+            key={action.page}
+            to={createPageUrl(action.page)}
+            className="group block"
           >
-            <Link
-              to={createPageUrl(action.page)}
-              className="block"
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex flex-col items-center justify-center p-4 rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-100 hover:border-gray-200 hover:shadow-lg transition-all duration-300 h-32"
             >
-              <motion.div
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg transition-colors",
+                <div className={cn(
+                  "p-3 rounded-2xl mb-3 transition-colors shadow-sm",
+                  action.bg,
                   action.color
-                )}
-                whileHover={{ scale: 1.03, y: -3 }}
-                whileTap={{ scale: 0.98 }}
-                transition={{ duration: 0.2 }}
-              >
-                <motion.div 
-                  initial={{ y: -4, opacity: 0 }} 
-                  animate={{ y: 0, opacity: 1 }} 
-                  transition={{ delay: 0.08, duration: 0.3 }}
-                >
-                  <action.icon className="w-5 h-5" />
-                </motion.div>
-                <span className="text-sm font-medium">{action.label}</span>
-              </motion.div>
-            </Link>
-          </motion.div>
+                )}>
+                    <action.icon className="w-6 h-6" strokeWidth={2} />
+                </div>
+                <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900">{action.label}</span>
+            </motion.div>
+          </Link>
         ))}
       </div>
     </div>

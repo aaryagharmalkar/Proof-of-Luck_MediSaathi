@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import api from "@/api/apiClient";
 
 const STORAGE_ID = "active_member_id";
@@ -7,11 +8,22 @@ const STORAGE_NAME = "active_member_name";
 const ActiveMemberContext = createContext(null);
 
 export function ActiveMemberProvider({ children }) {
+  const location = useLocation();
   const [activeMember, setActiveMemberState] = useState(null);
   const [membersList, setMembersList] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
 
+  const isDoctorRoute = location.pathname.startsWith("/doctor-dashboard") || location.pathname.startsWith("/doctor-login") || location.pathname.startsWith("/doctor-onboarding");
+
   const loadMembers = useCallback(async () => {
+    // Check for token first to optimize and avoid 401s for guests
+    const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+
+    if (isDoctorRoute || !token) {
+      setMembersList([]);
+      setActiveMemberState(null);
+      return;
+    }
     setMembersLoading(true);
     try {
       const { data } = await api.get("/members");
@@ -32,7 +44,7 @@ export function ActiveMemberProvider({ children }) {
     } finally {
       setMembersLoading(false);
     }
-  }, []);
+  }, [isDoctorRoute]);
 
   useEffect(() => {
     loadMembers();

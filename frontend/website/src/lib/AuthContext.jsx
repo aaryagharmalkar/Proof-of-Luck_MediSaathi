@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import api from "@/api/apiClient"; // axios instance
+import api from "@/api/apiClient";
+import { getApiBaseUrl } from "@/api/baseUrl";
 
 const AuthContext = createContext(null);
 
@@ -45,7 +46,13 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true);
       return { ok: true, onboarding_completed: data?.onboarding_completed };
     } catch (err) {
-      setAuthError(err.response?.data?.detail || err.response?.data?.message || "Login failed");
+      let msg = err.response?.data?.detail || err.response?.data?.message || "Login failed";
+      if (!err.response) {
+        msg = err.code === "ECONNABORTED"
+          ? "Request timed out. Check your connection and that the backend is running at " + getApiBaseUrl().replace(/\/api\/v1$/, "")
+          : "Cannot reach server. Check that the backend is running and VITE_API_URL is correct.";
+      }
+      setAuthError(typeof msg === "string" ? msg : "Login failed");
       return { ok: false };
     }
   };

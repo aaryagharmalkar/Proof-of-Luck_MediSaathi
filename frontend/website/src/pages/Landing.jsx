@@ -63,6 +63,7 @@ const steps = [
   { number: '03', title: 'Get Personalized Care', description: 'Receive tailored health recommendations and reminders' },
 ];
 
+
 export default function Landing() {
   const navigate = useNavigate();
 
@@ -71,23 +72,37 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen relative bg-gray-50/50 overflow-hidden font-sans selection:bg-teal-100">
+      {/* Background Blobs */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-gradient-to-br from-teal-50/80 to-blue-50/80 rounded-full blur-3xl opacity-60" />
+        <div className="absolute top-[40%] right-[-10%] w-[500px] h-[500px] bg-gradient-to-tr from-purple-50/50 to-pink-50/50 rounded-full blur-3xl opacity-40" />
+        <div className="absolute bottom-[-10%] left-[20%] w-[600px] h-[600px] bg-gradient-to-tr from-emerald-50/50 to-teal-50/50 rounded-full blur-3xl opacity-50" />
+      </div>
+
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/70 backdrop-blur-xl border-b border-white/40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-xl shadow-lg shadow-teal-500/20 flex items-center justify-center">
+                <Heart className="w-6 h-6 text-white fill-current" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+              <span className="text-2xl font-extrabold text-gray-900 tracking-tight">
                 MediSaathi
               </span>
             </div>
             <div className="flex items-center gap-4">
-              <Button 
-                onClick={() => navigate('/Login')}
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl px-6"
+              <Button
+                variant="ghost"
+                onClick={() => navigate("/role-select")}
+                className="rounded-xl px-5 text-gray-600 hover:text-teal-700 hover:bg-teal-50 font-bold"
+              >
+                For Doctors
+              </Button>
+              <Button
+                onClick={() => navigate("/Login")}
+                className="bg-gray-900 hover:bg-black text-white font-bold rounded-xl px-6 h-10 shadow-lg shadow-gray-900/20 transition-all hover:scale-105 active:scale-95"
               >
                 Get Started
               </Button>
@@ -97,47 +112,60 @@ export default function Landing() {
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
+      <section className="pt-40 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-full mb-6">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
-                <span className="text-sm font-medium text-emerald-700">AI-Powered Healthcare</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-md border border-white/40 rounded-full mb-8 shadow-sm">
+                <Sparkles className="w-4 h-4 text-teal-600" />
+                <span className="text-sm font-bold text-teal-800 tracking-wide uppercase">AI-Powered Healthcare</span>
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                <span className="block bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
-                  MediSaathi
-                </span>
-                <span className="block text-2xl sm:text-3xl lg:text-4xl mt-2 font-semibold text-gray-700">
-                  Your Personal Healthcare Companion
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 leading-[1.1] mb-8 tracking-tight">
+                Your Health, <br />
+                <span className="bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent">
+                  Reimagined.
                 </span>
               </h1>
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                MediSaathi manages your health records, appointments, prescriptions, and provides AI-powered medical insights — all in one unified platform.
+              <p className="text-xl text-gray-600 mb-10 leading-relaxed max-w-lg font-medium">
+                MediSaathi synthesizes your records, appointments, and prescriptions into one seamless, AI-driven experience.
               </p>
+              
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button 
                   size="lg" 
                   onClick={() => navigate('/Login')}
-                  className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl px-8 py-6 text-lg"
+                  className="bg-gray-900 hover:bg-black text-white rounded-2xl px-8 py-7 text-lg font-bold shadow-xl shadow-gray-900/20 transition-all hover:-translate-y-1"
                 >
                   Get Started Free
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
+                <Button 
+                  size="lg"
+                  variant="outline" 
+                  onClick={() => navigate('/role-select')}
+                  className="bg-white/50 backdrop-blur border-white/60 text-gray-700 hover:bg-white rounded-2xl px-8 py-7 text-lg font-bold shadow-sm"
+                >
+                  I'm a Doctor
+                </Button>
               </div>
-              <div className="flex items-center gap-4 mt-8">
-                <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-full">
-                  <Shield className="w-4 h-4 text-emerald-600" />
-                  <span className="text-sm font-medium text-emerald-700">Secure & Private</span>
+
+              <div className="flex items-center gap-6 mt-12">
+                <div className="flex -space-x-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="w-12 h-12 rounded-full border-2 border-white bg-gray-200" />
+                  ))}
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full">
-                  <Sparkles className="w-4 h-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-700">AI Powered</span>
+                <div>
+                  <div className="flex text-yellow-500 mb-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                    ))}
+                  </div>
+                  <p className="text-sm font-bold text-gray-600">Trusted by 10,000+ users</p>
                 </div>
               </div>
             </motion.div>
@@ -148,42 +176,50 @@ export default function Landing() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="relative hidden lg:block"
             >
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-3xl blur-3xl opacity-20" />
-                <div className="relative bg-white rounded-3xl shadow-2xl p-8 border border-gray-100">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-2xl flex items-center justify-center">
-                      <Activity className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-900">Your Health Hub</h3>
-                      <p className="text-sm text-gray-500">All-in-one health management</p>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="bg-emerald-50 rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">AI Report Analysis</span>
-                        <Sparkles className="w-4 h-4 text-emerald-500" />
+              <div className="relative z-10 bg-white/40 backdrop-blur-xl rounded-[2.5rem] border border-white/60 p-4 shadow-2xl">
+                 <div className="bg-white/80 rounded-[2rem] p-8 shadow-inner border border-white/40">
+                    <div className="flex items-center justify-between mb-8">
+                      <div>
+                        <h3 className="text-2xl font-extrabold text-gray-900">Health Hub</h3>
+                        <p className="text-gray-500 font-medium">Your daily summary</p>
                       </div>
-                      <p className="font-semibold text-gray-900">Upload & get instant insights</p>
-                    </div>
-                    <div className="bg-blue-50 rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Doctor Scheduler</span>
-                        <Calendar className="w-4 h-4 text-blue-500" />
+                      <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                        <Activity className="w-6 h-6 text-teal-600" />
                       </div>
-                      <p className="font-semibold text-gray-900">Book appointments easily</p>
                     </div>
-                    <div className="bg-purple-50 rounded-xl p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Medicine Tracker</span>
-                        <Bell className="w-4 h-4 text-purple-500" />
-                      </div>
-                      <p className="font-semibold text-gray-900">Never miss a dose</p>
+                    
+                    <div className="space-y-4">
+                       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                             <Calendar className="w-6 h-6" />
+                          </div>
+                          <div>
+                             <h4 className="font-bold text-gray-900">Cardiologist Visit</h4>
+                             <p className="text-sm text-gray-500">Tomorrow at 10:00 AM</p>
+                          </div>
+                       </div>
+                       
+                       <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+                             <Pill className="w-6 h-6" />
+                          </div>
+                          <div>
+                             <h4 className="font-bold text-gray-900">Vitamin D</h4>
+                             <p className="text-sm text-gray-500">1 pill after lunch</p>
+                          </div>
+                       </div>
+
+                       <div className="bg-gradient-to-r from-teal-500 to-teal-600 rounded-2xl p-5 text-white shadow-lg shadow-teal-500/20 mt-6">
+                          <div className="flex items-center gap-3 mb-2">
+                             <Sparkles className="w-5 h-5 opacity-80" />
+                             <span className="font-bold opacity-90">AI Warning</span>
+                          </div>
+                          <p className="text-sm font-medium leading-relaxed opacity-90">
+                             "Your recent blood report suggests slightly low iron levels. Consider adding spinach to your diet."
+                          </p>
+                       </div>
                     </div>
-                  </div>
-                </div>
+                 </div>
               </div>
             </motion.div>
           </div>
@@ -191,37 +227,38 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-50 to-white">
+      <section className="py-24 px-4 sm:px-6 lg:px-8 relative">
         <div className="max-w-7xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Everything You Need for Better Health
+            <h2 className="text-4xl lg:text-5xl font-extrabold text-gray-900 mb-6 tracking-tight">
+              Complete Health Intelligence
             </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Comprehensive healthcare management powered by artificial intelligence
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto font-medium">
+              We've combined everything you need into one elegant dashboard.
             </p>
           </motion.div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:shadow-gray-100/50 transition-all duration-300"
+                whileHover={{ y: -5 }}
+                className="group bg-white/70 backdrop-blur-xl rounded-[2.5rem] p-8 border border-white/50 shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-gray-200/80 transition-all duration-300"
               >
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
-                  <feature.icon className="w-7 h-7 text-white" />
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
+                  <feature.icon className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                <p className="text-gray-600 font-medium leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -229,130 +266,125 @@ export default function Landing() {
       </section>
 
       {/* How It Works */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <section className="py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-20"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              How MediSaathi Works
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-6 tracking-tight">
+              Three Steps to Better Health
             </h2>
-            <p className="text-lg text-gray-600">
-              Get started in three simple steps
-            </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-12">
             {steps.map((step, index) => (
               <motion.div
                 key={step.number}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.2 }}
-                className="relative"
+                className="relative bg-white/40 backdrop-blur rounded-[2rem] p-8 border border-white/50"
               >
-                <div className="text-7xl font-bold text-emerald-100 mb-4">{step.number}</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
-                {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-10 right-0 w-full h-0.5 bg-gradient-to-r from-emerald-200 to-transparent" />
-                )}
+                <div className="text-7xl font-extrabold text-gray-200/80 absolute top-4 right-6 pointer-events-none">{step.number}</div>
+                <div className="relative z-10 pt-4">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-4">{step.title}</h3>
+                  <p className="text-gray-600 font-medium">{step.description}</p>
+                </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Why Choose Us */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-emerald-500 to-teal-600">
+      {/* Why Choose Us - Large Float Card */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-                Why Choose MediSaathi?
-              </h2>
-              <div className="space-y-4">
-                {[
-                  'AI-powered medical report analysis and insights',
-                  'Secure and private health data storage',
-                  'Smart medicine reminders with tracking',
-                  '24/7 AI health assistant support',
-                  'Emergency alerts to contacts and services',
-                  'Seamless doctor appointment scheduling'
-                ].map((item, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-center gap-3"
-                  >
-                    <CheckCircle2 className="w-6 h-6 text-emerald-200 flex-shrink-0" />
-                    <span className="text-white text-lg">{item}</span>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="bg-gray-900 rounded-[3rem] overflow-hidden relative shadow-2xl"
+          >
+            {/* Dark blobs for inside the card */}
+            <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-teal-900/30 rounded-full blur-3xl" />
+                <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] bg-blue-900/30 rounded-full blur-3xl" />
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              className="bg-white/10 backdrop-blur-lg rounded-3xl p-8"
-            >
-              <div className="text-center">
-                <div className="flex justify-center -space-x-4 mb-6">
-                  <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white flex items-center justify-center">
-                    <Users className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white flex items-center justify-center">
-                    <Stethoscope className="w-8 h-8 text-white" />
-                  </div>
-                  <div className="w-16 h-16 rounded-full bg-white/20 border-2 border-white flex items-center justify-center">
-                    <Heart className="w-8 h-8 text-white" />
-                  </div>
+            <div className="grid lg:grid-cols-2 gap-16 items-center p-12 lg:p-20 relative z-10">
+              <div>
+                <h2 className="text-4xl lg:text-5xl font-extrabold text-white mb-8 tracking-tight">
+                  Why Choose MediSaathi?
+                </h2>
+                <div className="space-y-6">
+                  {[
+                    'AI-powered medical report analysis and insights',
+                    'Secure and private health data storage',
+                    'Smart medicine reminders with tracking',
+                    '24/7 AI health assistant support',
+                    'Emergency alerts to contacts and services'
+                  ].map((item, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -20 }}
+                      whileInView={{ opacity: 1, x: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.1 }}
+                      className="flex items-center gap-4"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-teal-500/20 flex items-center justify-center border border-teal-500/50">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
+                      </div>
+                      <span className="text-gray-200 text-lg font-medium">{item}</span>
+                    </motion.div>
+                  ))}
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-4">Ready to take control of your health?</h3>
-                <p className="text-emerald-100 mb-6">Join thousands of users who trust MediSaathi for their healthcare management</p>
-                <Button 
-                  size="lg" 
-                  onClick={handleGetStarted}
-                  className="bg-white text-emerald-600 hover:bg-emerald-50 rounded-xl px-8"
-                >
-                  Get Started Now
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
+                
+                <div className="mt-12 flex flex-wrap gap-4">
+                  <Button
+                    size="lg"
+                    onClick={handleGetStarted}
+                    className="bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-xl px-10 h-14 text-lg shadow-lg shadow-teal-500/25 transition-transform hover:scale-105"
+                  >
+                    Get Started Now
+                  </Button>
+                </div>
               </div>
-            </motion.div>
-          </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 lg:p-12 text-center backdrop-blur-md">
+                <div className="flex justify-center -space-x-4 mb-8">
+                   {[Users, Stethoscope, Heart].map((Icon, i) => (
+                      <div key={i} className="w-20 h-20 rounded-2xl bg-gray-800 border-4 border-gray-900 flex items-center justify-center shadow-lg">
+                        <Icon className="w-8 h-8 text-gray-400" />
+                      </div>
+                   ))}
+                </div>
+                <h3 className="text-3xl font-bold text-white mb-4">Ready to start?</h3>
+                <p className="text-gray-400 text-lg mb-0">Join thousands of users who trust MediSaathi for their healthcare management.</p>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 border-t border-gray-100">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-xl flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white" />
+      <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-gray-200/50 bg-white/30 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center">
+                <Heart className="w-5 h-5 text-white fill-current" />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+              <span className="text-xl font-extrabold text-gray-900 tracking-tight">
                 MediSaathi
               </span>
             </div>
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-500 font-medium text-sm">
               © 2024 MediSaathi. All rights reserved. Your health, our priority.
             </p>
-          </div>
         </div>
       </footer>
     </div>

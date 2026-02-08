@@ -12,6 +12,12 @@ import AudioSummary from "@/pages/AudioSummary";
 import Appointments from "@/pages/Appointments";
 import ProfileSelector from "@/pages/ProfileSelector";
 import Dashboard from "@/pages/Dashboard";
+import RoleSelect from "@/pages/RoleSelect";
+import Login from "@/pages/Login";
+import DoctorOnboarding from "@/pages/DoctorOnboarding";
+import DoctorDashboard from "@/pages/DoctorDashboard";
+import DoctorPatients from "@/pages/DoctorPatients";
+import DoctorPatientDetail from "@/pages/DoctorPatientDetail";
 
 
 
@@ -82,10 +88,20 @@ const AuthenticatedApp = () => {
         />
       ))}
 
-      <Route path="/appointments" element={<Appointments />} />
-<Route path="/audio-summary" element={<AudioSummary />} />
-      <Route path="/profiles" element={<ProfileSelector />} />
-<Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/appointments" element={<LayoutWrapper currentPageName="appointments"><Appointments /></LayoutWrapper>} />
+      <Route path="/audio-summary" element={<LayoutWrapper currentPageName="audio-summary"><AudioSummary /></LayoutWrapper>} />
+      <Route path="/profiles" element={<LayoutWrapper currentPageName="profiles"><ProfileSelector /></LayoutWrapper>} />
+      <Route path="/dashboard" element={<LayoutWrapper currentPageName="dashboard"><Dashboard /></LayoutWrapper>} />
+
+      {/* Role selection (patient vs doctor) */}
+      <Route path="/role-select" element={<RoleSelect />} />
+
+      {/* Doctor flow: login uses same Login page, then onboarding or dashboard */}
+      <Route path="/doctor-login" element={<Login />} />
+      <Route path="/doctor-onboarding" element={<DoctorOnboarding />} />
+      <Route path="/doctor-dashboard" element={<LayoutWrapper currentPageName="doctor-dashboard"><DoctorDashboard /></LayoutWrapper>} />
+      <Route path="/doctor-dashboard/patients" element={<LayoutWrapper currentPageName="doctor-patients"><DoctorPatients /></LayoutWrapper>} />
+      <Route path="/doctor-dashboard/patients/:patientId" element={<LayoutWrapper currentPageName="doctor-patient-detail"><DoctorPatientDetail /></LayoutWrapper>} />
 
       {/* 404 */}
       <Route path="*" element={<PageNotFound />} />

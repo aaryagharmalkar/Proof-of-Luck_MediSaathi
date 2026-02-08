@@ -1,45 +1,9 @@
-import { useState, useCallback } from "react";
-import { ArrowLeft, Upload, FileText, X, CheckCircle, Loader2, Image, File, Heart } from "lucide-react";
+import { useState } from "react";
+import { Upload, FileText, X, Loader2, File, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-
-
-// 🔧 CONFIG
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5050/api/v1";
-const DEMO_PATIENT_ID = "507f1f77bcf86cd799439011";
-
-const Button = ({ children, variant = "default", size = "default", className = "", onClick, disabled }) => {
-  const baseStyles = "inline-flex items-center justify-center rounded-lg font-medium transition-colors";
-  const variants = {
-    default: "bg-gray-200 hover:bg-gray-300 text-gray-900",
-    ghost: "hover:bg-gray-100",
-    hero: "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg shadow-teal-500/30",
-  };
-  const sizes = {
-    default: "px-4 py-2",
-    lg: "px-6 py-3 text-lg",
-    icon: "p-2",
-  };
-  
-  return (
-    <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Progress = ({ value }) => (
-  <div className="w-full bg-gray-200 rounded-full h-2">
-    <div
-      className="bg-gradient-to-r from-teal-500 to-cyan-500 h-2 rounded-full transition-all"
-      style={{ width: `${value}%` }}
-    />
-  </div>
-);
+import api from "@/api/apiClient";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 const UploadMedicalReport = ({ onSummaryReady }) => {
 
@@ -49,262 +13,120 @@ const UploadMedicalReport = ({ onSummaryReady }) => {
   const [progress, setProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
 
-
-  /* ---------------------------------- ⚡ OPTIMIZED PDF EXTRACTION -----------------------------------*/
-  const loadPdfJs = async () => {
-    if (window.pdfjsLib) return window.pdfjsLib;
-    
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-      script.onload = () => {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 
-          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        resolve(window.pdfjsLib);
-      };
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-  };
-
-  const extractTextFromPDF = async (file) => {
-  const pdfjsLib = await loadPdfJs();
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
-  const batchSize = 5;
-  const totalPages = pdf.numPages;
-  let allText = [];
-
-  for (let i = 1; i <= totalPages; i += batchSize) {
-    const batch = [];
-    for (let j = i; j < Math.min(i + batchSize, totalPages + 1); j++) {
-      batch.push(
-        pdf.getPage(j).then(page =>
-          page.getTextContent().then(content =>
-            content.items.map(item => item.str).join(" ")
-          )
-        )
-      );
-    }
-    const batchResults = await Promise.all(batch);
-    allText.push(...batchResults);
-    setProgress(Math.floor((i / totalPages) * 30));
-  }
-
-  // ✅ CLEANING STEP
-  const cleanedText = allText
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .replace(/\b(\d+\s*)+/g, "")
-    .trim();
-
-  console.log("TEXT PREVIEW:", cleanedText.slice(0, 300));
-
-  return cleanedText; // 👈 IMPORTANT
-};
-
-
-  const handleDrag = useCallback((e) => {
+  const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragActive(e.type === "dragenter" || e.type === "dragover");
-  }, []);
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
 
-  const handleDrop = useCallback((e) => {
+  const validateFile = (file) => {
+    if (file.type !== "application/pdf") {
+      setErrorMessage("Only PDF files are supported");
+      return false;
+    }
+    setErrorMessage("");
+    return true;
+  };
+
+  const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0]);
-  }, []);
-
-  const handleFileInput = (e) => {
-    if (e.target.files?.[0]) handleFile(e.target.files[0]);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const droppedFile = e.dataTransfer.files[0];
+      if (validateFile(droppedFile)) {
+        setFile(droppedFile);
+      }
+    }
   };
 
-  const handleFile = (selectedFile) => {
-    const validTypes = ["application/pdf", "image/jpeg", "image/png", "image/heic"];
-    if (!validTypes.includes(selectedFile.type)) {
-      alert("Please upload a PDF or image file");
-      return;
+  const handleFileInput = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      if (validateFile(selectedFile)) {
+        setFile(selectedFile);
+      }
     }
-    setFile(selectedFile);
   };
 
   const removeFile = () => {
     setFile(null);
-    setUploadState("idle");
-    setProgress(0);
+    setErrorMessage("");
   };
 
-  /* ---------------------------------- ⚡ OPTIMIZED UPLOAD PIPELINE -----------------------------------*/
   const handleUpload = async () => {
-  if (!file) return;
+    if (!file) return;
 
-  try {
-    setUploadState("uploading");
-    setProgress(5);
-
-    if (file.type !== "application/pdf") {
-      alert("Image OCR coming soon. Please upload a PDF for now.");
-      setUploadState("idle");
+    const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+    if (!token) {
+      setErrorMessage("Please log in to upload reports.");
       return;
     }
 
-    // 1️⃣ Extract text
-    const extractedText = await extractTextFromPDF(file);
-    
-    if (!extractedText.trim()) {
-      throw new Error("No readable text found in PDF");
-    }
+    let progressInterval;
+    try {
+      setUploadState("uploading");
+      setErrorMessage("");
+      setProgress(10); // Start progress
 
-    setProgress(30);
+      const formData = new FormData();
+      formData.append("file", file);
 
-    // 2️⃣ Upload the document
-    const uploadRes = await fetch(`${API_BASE}/reports/upload`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        patientId: DEMO_PATIENT_ID,
-        fullText: extractedText,
-        fileName: file.name,
-      }),
-    });
+      // Simulate a bit of progress for the upload phase
+      progressInterval = setInterval(() => {
+        setProgress(old => Math.min(old + 5, 90));
+      }, 200);
 
-    setProgress(50);
-    const uploadData = await uploadRes.json();
-    
-    if (!uploadData.success) {
-      throw new Error(uploadData.error || "Upload failed");
-    }
+      const { data } = await api.post("/reports/upload", formData);
 
-    const reportId = uploadData.reportId;
-    setProgress(60);
-    setUploadState("processing");
+      clearInterval(progressInterval);
+      setProgress(90);
 
-    // 3️⃣ Generate summary with retry logic
-    const MAX_RETRIES = 5;
-    let retryCount = 0;
-    let summarySuccess = false;
-    let summaryText = null;
-
-    while (retryCount < MAX_RETRIES && !summarySuccess) {
-      try {
-        console.log(`Attempting to generate summary... (${retryCount + 1}/${MAX_RETRIES})`);
-        
-        const summaryRes = await fetch(
-          `${API_BASE}/reports/${reportId}/summarize`,
-          { 
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",            }
-          }
-        );
-        
-        const summaryData = await summaryRes.json();
-        
-        if (summaryData.success && summaryData.summary) {
-          summarySuccess = true;
-          summaryText = summaryData.summary;
-          setProgress(90);
-          console.log("✅ Summary generated successfully");
-          
-          // ✅ Store summary in sessionStorage so ReportView can use it immediately
-          sessionStorage.setItem(`summary_${reportId}`, summaryText);
-          sessionStorage.setItem(`summarized_${reportId}`, 'true');
-          
-        } else {
-          // Handle different error types
-          const is429 = summaryRes.status === 429 || 
-                        summaryData.error?.includes("429") || 
-                        summaryData.error?.includes("busy") ||
-                        summaryData.error?.includes("rate limit");
-          
-          const isProcessing = summaryData.error?.includes("not ready") || 
-                               summaryData.error?.includes("processing");
-          
-          if (is429 || isProcessing) {
-            retryCount++;
-            
-            if (retryCount >= MAX_RETRIES) {
-              throw new Error("Summary generation is taking longer than expected. Please view the report to try again.");
-            }
-            
-            // Exponential backoff with longer delays
-            const delay = is429 
-              ? 3000 + (retryCount * 2000)  // 3s, 5s, 7s, 9s, 11s for rate limits
-              : 2000 + (retryCount * 1000); // 2s, 3s, 4s, 5s, 6s for processing
-            
-            console.log(`${is429 ? 'Rate limited' : 'Document not ready'}, waiting ${delay}ms... (${retryCount}/${MAX_RETRIES})`);
-            setProgress(60 + (retryCount * 5));
-            
-            await new Promise(resolve => setTimeout(resolve, delay));
-          } else {
-            // Different error, throw it
-            throw new Error(summaryData.error || "Failed to generate summary");
-          }
+      let summary = data.summary;
+      if (!summary && data.report_id && onSummaryReady) {
+        try {
+          const viewRes = await api.get(`/reports/${data.report_id}/view`);
+          summary = viewRes.data?.summary ?? null;
+        } catch (e) {
+          console.warn("On-demand summary fetch failed:", e);
         }
-      } catch (err) {
-        if (retryCount >= MAX_RETRIES - 1) {
-          // Last retry failed
-          throw new Error(err.message || "Summary generation failed after multiple attempts");
-        }
-        
-        retryCount++;
-        const delay = 3000;
-        console.log(`Error: ${err.message}, retrying in ${delay}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
       }
+
+      setProgress(100);
+      setUploadState("complete");
+
+      if (onSummaryReady && summary) {
+        onSummaryReady(summary);
+      }
+    } catch (err) {
+      if (progressInterval) clearInterval(progressInterval);
+      const detail = err.response?.data?.detail;
+      const message = detail != null
+        ? (Array.isArray(detail) ? detail.join(", ") : String(detail))
+        : (err.message || "Upload failed");
+      setErrorMessage(message);
+      setUploadState("idle");
+      setProgress(0);
     }
+  };
 
-    if (!summarySuccess) {
-      throw new Error("Could not generate summary. Please try again.");
-    }
-
-    setProgress(100);
-    setUploadState("complete");
-
-    if (onSummaryReady) {
-  onSummaryReady(summaryText);
-}
-console.log("TEXT PREVIEW:", cleanedText.slice(0, 300));
-
-
-   
-    
-  } catch (err) {
-    console.error("Upload error:", err);
-    
-    let errorMsg = "Upload failed. Please try again.";
-    
-    if (err.message?.includes("busy") || err.message?.includes("429")) {
-      errorMsg = "Service is temporarily busy. Please wait 30 seconds and try again.";
-    } else if (err.message?.includes("longer than expected")) {
-      errorMsg = err.message; // Use the custom message
-    } else if (err.message?.includes("No readable text")) {
-      errorMsg = "Could not extract text from PDF. Please ensure it's not a scanned image.";
-    } else if (err.message) {
-      errorMsg = err.message;
-    }
-    
-    setErrorMessage(errorMsg);
-    setUploadState("idle");
-    setProgress(0);
-  }
-};
-
-  const getFileIcon = (type) =>
-    type?.startsWith("image/") ? <Image className="w-6 h-6 text-teal-500" /> : <File className="w-6 h-6 text-teal-500" />;
+  const getFileIcon = () => <File className="w-6 h-6 text-teal-600" />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen relative bg-gray-50/50 overflow-hidden font-sans selection:bg-teal-100 flex items-center justify-center py-12 px-4">
+       {/* Background Blobs */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-gradient-to-br from-teal-50/80 to-blue-50/80 rounded-full blur-3xl opacity-60" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-gradient-to-tr from-purple-50/50 to-pink-50/50 rounded-full blur-3xl opacity-40" />
+      </div>
 
-      <main className="container mx-auto px-4 py-8 max-w-4xl">
-        {errorMessage && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-600 text-center">
-            {errorMessage}
-          </div>
-        )}
+      <main className="w-full max-w-2xl relative z-10">
+        
         <AnimatePresence mode="wait">
           {/* Upload State */}
           {uploadState === "idle" && (
@@ -312,65 +134,86 @@ console.log("TEXT PREVIEW:", cleanedText.slice(0, 300));
               key="idle"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2.5rem] p-8 md:p-12 overflow-hidden"
             >
-              <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold mb-2">Upload Medical Report</h1>
-                <p className="text-gray-600">Upload your report to analyze and get detailed insights</p>
+               <div className="text-center mb-10">
+                <div className="bg-teal-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                   <FileText className="w-8 h-8 text-teal-600" />
+                </div>
+                <h1 className="text-3xl font-extrabold text-gray-900 mb-3 tracking-tight">Upload Report</h1>
+                <p className="text-gray-500 font-medium">Upload your medical PDF to get instant AI-powered insights</p>
               </div>
 
+              {errorMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-8 p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 font-medium text-sm text-center"
+                >
+                  {errorMessage}
+                </motion.div>
+              )}
+
               <div
-                className={`relative border-2 border-dashed rounded-2xl p-12 transition-all ${
-                  dragActive ? "border-teal-500 bg-teal-50" : "border-gray-300 bg-white"
+                className={`relative group border-2 border-dashed rounded-[2rem] p-12 transition-all duration-300 ease-in-out cursor-pointer ${
+                  dragActive 
+                    ? "border-teal-500 bg-teal-50/50 scale-[1.02]" 
+                    : "border-gray-200 hover:border-teal-400 hover:bg-gray-50/50"
                 }`}
                 onDragEnter={handleDrag}
                 onDragOver={handleDrag}
                 onDragLeave={handleDrag}
                 onDrop={handleDrop}
+                onClick={() => document.getElementById('file-upload').click()}
               >
                 <input
+                  id="file-upload"
                   type="file"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="hidden"
                   onChange={handleFileInput}
-                  accept=".pdf,.jpg,.jpeg,.png,.heic"
+                  accept=".pdf"
                 />
 
                 <div className="text-center pointer-events-none">
-                  <Upload className="mx-auto mb-4 text-teal-500" size={48} />
-                  <p className="text-xl font-medium mb-2">Drag & drop or click to upload</p>
-                  <p className="text-gray-500">PDF, JPEG, PNG, HEIC supported</p>
+                  <div className={`w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center transition-colors duration-300 ${dragActive ? 'bg-teal-100 text-teal-600' : 'bg-gray-100 text-gray-400 group-hover:bg-teal-50 group-hover:text-teal-500'}`}>
+                    <Upload size={32} />
+                  </div>
+                  <p className="text-xl font-bold text-gray-900 mb-2">Drag & drop report here</p>
+                  <p className="text-gray-400 font-medium text-sm">or click to browse (PDF only)</p>
                 </div>
               </div>
 
               {file && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-6 flex items-center gap-4 p-4 border rounded-xl bg-white"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mt-8"
                 >
-                  {getFileIcon(file.type)}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{file.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {(file.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+                  <div className="flex items-center gap-4 p-4 border border-gray-100 rounded-2xl bg-white/60 shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
+                       {getFileIcon()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-gray-900 truncate">{file.name}</p>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); removeFile(); }} className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl">
+                      <X className="w-5 h-5" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="icon" onClick={removeFile}>
-                    <X className="w-5 h-5" />
+
+                  <Button
+                    size="lg"
+                    className="w-full mt-6 bg-gray-900 hover:bg-black text-white font-bold h-14 rounded-xl shadow-lg shadow-gray-900/20 transform transition-all hover:scale-[1.02]"
+                    onClick={handleUpload}
+                  >
+                    <FileText className="mr-2 w-5 h-5" />
+                    Analyze Report Now
                   </Button>
                 </motion.div>
-              )}
-
-              {file && (
-                <Button
-                  variant="hero"
-                  size="lg"
-                  className="w-full mt-6"
-                  onClick={handleUpload}
-                >
-                  <FileText className="mr-2 w-5 h-5" />
-                  Analyze Report
-                </Button>
               )}
             </motion.div>
           )}
@@ -379,33 +222,45 @@ console.log("TEXT PREVIEW:", cleanedText.slice(0, 300));
           {(uploadState === "uploading" || uploadState === "processing") && (
             <motion.div
               key="progress"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="p-12 text-center border rounded-2xl bg-white"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2.5rem] p-12 text-center"
             >
-              <Loader2 className="mx-auto animate-spin mb-4 text-teal-500" size={48} />
-              <p className="text-xl font-medium mb-4">
-                {uploadState === "uploading"
-                  ? "Extracting text..."
-                  : "Analyzing report..."}
+              <div className="relative w-24 h-24 mx-auto mb-8">
+                <div className="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-teal-500 rounded-full border-t-transparent animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                   <span className="text-lg font-bold text-teal-600">{progress}%</span>
+                </div>
+              </div>
+              
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">Analyzing Report...</h2>
+              <p className="text-gray-500 font-medium mb-8">
+                Reading your medical data and generating insights
               </p>
-              <Progress value={progress} />
-              <p className="mt-2 text-gray-600">{progress}%</p>
+              
+              <div className="w-full max-w-xs mx-auto">
+                 <Progress value={progress} className="h-2" indicatorClassName="bg-teal-500" />
+              </div>
             </motion.div>
           )}
 
           {/* Complete State */}
           {uploadState === "complete" && (
-            <motion.div
-              key="complete"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="p-12 text-center border rounded-2xl bg-green-50"
-            >
-              <CheckCircle className="mx-auto text-green-600 mb-4" size={48} />
-              <p className="text-xl font-medium">Analysis complete!</p>
-              <p className="text-sm text-gray-600 mt-2">Redirecting...</p>
-            </motion.div>
+             <motion.div
+             key="complete"
+             initial={{ opacity: 0, scale: 0.9 }}
+             animate={{ opacity: 1, scale: 1 }}
+             className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-[2.5rem] p-12 text-center"
+           >
+             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm animate-pulse">
+               <CheckCircle2 className="w-10 h-10 text-green-600" />
+             </div>
+             <h2 className="text-3xl font-extrabold text-gray-900 mb-4">Analysis Complete!</h2>
+             <p className="text-gray-600 font-medium mb-8">
+               Your report has been successfully processed. Redirecting to insights...
+             </p>
+           </motion.div>
           )}
         </AnimatePresence>
       </main>

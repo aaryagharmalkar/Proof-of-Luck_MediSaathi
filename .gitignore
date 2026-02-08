@@ -1,0 +1,20 @@
+# OS & editor
+.DS_Store
+*.log
+.idea/
+.vscode/
+*.suo
+*.sw?
+
+# Dependencies (root / frontend workspace)
+node_modules/
+
+# Environment (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Build & cache
+dist/
+*.local
+.cache/

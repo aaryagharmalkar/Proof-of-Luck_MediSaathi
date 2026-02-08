@@ -1,252 +1,220 @@
 # MediSaathi
 
-MediSaathi is an AI-powered healthcare companion designed to simplify, organize, and enhance personal healthcare management. It centralizes medical records, prescriptions, doctor appointments, emergency support, and AI-driven health insights into a single unified platform, enabling proactive, informed, and timely healthcare decisions.
+**Proof-of-Luck**
+
+**Live app:** [https://medi-saathi-fawn.vercel.app/](https://medi-saathi-fawn.vercel.app/)
+
+MediSaathi is an AI-driven healthcare companion (app and web) that centralizes medical records, appointments, prescriptions, and emergency information. It summarizes reports and doctor–patient conversations, improves medication adherence with smart reminders, and provides proactive monitoring, chatbot support, and emergency assistance.
 
 ---
 
-## Overview
+## Resources
 
-Healthcare today is fragmented, reactive, and difficult for patients to manage effectively. Medical data is often scattered across hospitals, applications, and paper records, making it hard for individuals to understand reports, follow treatments, and take timely action.
-
-MediSaathi addresses these challenges by acting as a digital healthcare assistant that transforms complex medical data into clear, actionable insights while supporting continuous monitoring, adherence, and early risk detection.
-
----
-
-## Problem Statement
-
-Patients commonly face the following challenges:
-- Fragmented medical records across multiple platforms
-- Complex medical terminology and unstructured reports
-- Missed medications due to lack of reminders and tracking
-- Delayed access to appropriate doctors
-- Inefficient appointment scheduling
-- Limited proactive health monitoring
-- Poor emergency readiness and communication
-- Low patient engagement and health awareness
-
-These issues often lead to delayed care, poor adherence, and suboptimal health outcomes.
+| Resource | Link |
+|----------|------|
+| **Presentation (PDF)** | [Medisaathi.pdf](https://drive.google.com/file/d/1efmUbq0-JE87vi5LnsMSyuly4ltIw7ZC/view?usp=sharing) |
+| **Demo video** | [Google Drive](https://drive.google.com/file/d/1ua8xfadCKwKJaYQkmwdAVxEoKrEgVqIc/view?usp=drive_link) |
 
 ---
 
-## Proposed Solution
+## Problem statement
 
-MediSaathi is an AI-driven healthcare companion available as a web and mobile application that:
-- Centralizes patient health data into a single digital platform
-- Uses AI to summarize medical reports and doctor–patient conversations
-- Digitizes and analyzes prescriptions using OCR
-- Tracks medication adherence with intelligent reminders
-- Detects health risks early using AI-driven analysis
-- Recommends doctors based on symptoms and location
-- Provides emergency alerts and support
+Healthcare today is fragmented, reactive, and hard for patients to manage. People face:
 
----
+- **Fragmented records** — Medical data scattered across hospitals, apps, and paper
+- **Complex information** — Unclear terminology and unstructured reports
+- **Missed medicines** — Poor adherence due to lack of reminders and tracking
+- **Delayed care** — Difficulty finding the right doctor by symptoms and location
+- **Inefficient booking** — No integration with patient health data
+- **Limited monitoring** — Important health trends go unnoticed
+- **Emergency readiness** — No quick way to alert doctors and family
+- **Low engagement** — Limited guidance and health awareness
 
-## Key Features
-
-### Centralized Health Profile
-- Unified dashboard for medical reports, prescriptions, appointments, and emergency contacts
-- Secure storage and structured access to health data
-
-### AI-Based Medical Report Summarization
-- Upload medical reports in PDF or image format
-- AI-generated summaries with key findings
-- Visualization of health metrics and trend analysis
-- Risk severity scoring for early intervention
-
-### OCR-Based Prescription Processing
-- Digitization of handwritten and printed prescriptions
-- Medicine name, dosage, and duration extraction
-- Structured prescription storage
-- Integration with medicine reminders and tracking
-
-### Medicine Reminder and Adherence Tracking
-- Automated reminder scheduling
-- Intake tracking (taken/missed)
-- Missed-dose detection
-- Emergency alerts for repeated non-adherence
-
-### Medical Conversation Summarization
-- Upload recorded doctor–patient conversations
-- Speech-to-text conversion and speaker diarization
-- Extraction of key medical instructions
-- Structured AI summaries for patient reference
-
-### Doctor Appointment Scheduling
-- Symptom-based clinical intent analysis using NLP
-- Location-aware specialist recommendations
-- Doctor availability matching
-- Seamless appointment booking and calendar integration
-
-### Anemia Detection and Risk Assessment
-- AI-based analysis to detect potential anemia indicators
-- Uses medical reports, hemoglobin values, and health data patterns
-- Classifies anemia risk levels (low, moderate, high)
-- Provides early alerts and recommendations for medical follow-up
-- Supports proactive screening and preventive healthcare
-
-### Emergency Support System
-- One-tap emergency alert mechanism
-- Automatic notification to emergency contacts and doctors
-- Fast access to critical patient information during emergencies
+Relevant SDGs: better healthcare access and understanding (SDG 3), digital and AI-driven healthcare (SDG 9), accessibility for diverse users (SDG 10), and responsive digital health systems.
 
 ---
 
-## Technical Architecture
+## Proposed solution
 
-### API Gateway and Security Layer
-- JWT-based authentication
-- Role-Based Access Control (RBAC)
-- Request routing and rate limiting
+A unified platform that:
 
-### Microservices Architecture
-- Medical Report and Conversation Summarization (LLM + RAG)
-- OCR-Based Prescription Reader and Medicine Tracker
-- Anemia Detection and Health Risk Analysis Service
-- Doctor Appointment Scheduler
-- Notification and Alert Service
-
-### Database Structure
-- Users and Profiles Database  
-  Stores user details, health profiles, and emergency contacts  
-
-- Medical Data Database  
-  Stores reports, prescriptions, summaries, and extracted health metrics  
-
-- Care and Intelligence Database  
-  Stores appointments, reminders, alerts, AI insights, and risk assessments  
+- Centralizes **family health data** — reports, prescriptions, appointments, emergency contacts — in one place
+- **Summarizes** medical reports, prescriptions, and doctor–patient conversations so complex data becomes clear and actionable
+- Uses **smart reminders**, progress tracking, and health insights to improve **medication adherence**
+- Monitors health indicators and provides **alerts**, **chatbot support**, and **emergency assistance**
 
 ---
 
-## Tech Stack
+## Features
 
-- **Frontend**: React Native (iOS & Android)
-- **Backend**: FastAPI (Python)
-- **Database**: MongoDB
-- **AI and NLP**: Large Language Models, Retrieval-Augmented Generation (RAG), SpaCy
-- **OCR**: Tesseract OCR
-- **Authentication**: JWT, RBAC
-- **Infrastructure**: Docker, Cloud Deployment  
+| Feature | Description |
+|--------|-------------|
+| **Family profile management** | One place for the whole family’s health data, prescriptions, reports, and appointments |
+| **AI-based prescription processing (OCR)** | Digitizes handwritten/printed prescriptions, medicine info, and ordering |
+| **Smart health assistance** | Medicine reminders, treatment adherence, nearest doctor and pharmacy locator |
+| **Medical report summary & analysis** | Upload reports → AI summaries, key metrics, health risk severity scores |
+| **Medical conversation summarization** | Upload doctor–patient conversations → clear, structured insights and instructions |
+| **Doctor appointment scheduling** | Symptom-based matching (NLP), availability, and seamless booking |
+| **Emergency support** | One-tap alerts and notifications to emergency contacts and doctors |
 
----
-
-## Target Audience
-
-- Patients  
-- Doctors  
-- Caregivers  
-- Family members  
-- Hospitals and clinics  
+**User flow:** Onboarding (profile, questions, emergency contacts) → **Dashboard** with Appointment Scheduler, Medical Summarizer, Prescription Analyzer, Medicine Reminder & Tracker, and Emergency Button.
 
 ---
 
-## Impact
+## Architecture (high level)
 
-- Improves patient understanding of medical reports and prescriptions
-- Reduces missed medications through intelligent reminders
-- Enables early detection of health risks such as anemia
-- Provides faster access to appropriate healthcare professionals
-- Supports proactive, preventive, and personalized healthcare
+- **API gateway & security:** JWT auth, RBAC, request routing, rate limiting
+- **Microservices:** Medical summarization (documents + conversations, RAG); OCR prescription reader + medicine reminders; context-aware RAG chatbot
+- **Databases:** Users & profiles; medical data (reports, prescriptions, summaries, metrics); care & intelligence (appointments, reminders, alerts, AI insights)
 
 ---
 
-## Scalability and Future Scope
+## Tech stack & partners
 
-- Integration with wearable devices for continuous health monitoring
-- Expansion into diagnostics, insurance, and hospital system integrations
-- Advanced AI-driven predictive health insights
-- Personalized healthcare planning and recommendations
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | React (Vite) — web app |
+| **Backend** | FastAPI (Python) |
+| **Database & auth** | Supabase (Postgres + Auth) |
+| **AI / LLM** | Mistral, LLMs, RAG |
+| **Voice / TTS** | ElevenLabs |
+| **OCR** | Tesseract OCR (prescription extraction) |
+| **Hosting / infra** | Vultr, Vercel |
+| **Auth & security** | JWT, RBAC |
 
----
-
-## Innovation and Uniqueness
-
-- End-to-end healthcare management in a single platform
-- Context-aware AI using complete patient health history
-- Combines reports, prescriptions, appointments, anemia detection, and emergencies seamlessly
-- Focus on proactive care rather than reactive treatment
-
----
-
-## Demo
-
-Demo Video:  
-https://drive.google.com/drive/folders/1BfWLpA-fjq_OEyO6bgrHbeS3sKxbQNWQ
+Additional integrations and APIs are used for NLP, embeddings, and medical understanding as needed.
 
 ---
 
-## Project Structure
+## Innovation & benefits
+
+- **End-to-end health management** for families: reports → doctors → medicines → emergencies in one platform
+- **Context-aware AI** using full patient history for summaries and guidance
+- **Doctor-grade summaries in seconds** — complex reports and conversations turned into clear, actionable insights
+- **Human-like medical conversations** — contextual, empathetic chatbot (not a generic bot)
+- **Multi-modal** — PDFs, images, prescriptions, voice, and text in one workflow
+- **Built for real-world use** — simple navigation and quick understanding for patients and families
+
+**Target audience:** Patients, doctors, family members, caregivers, hospitals and clinics.
+
+---
+
+## Project structure
 
 ```
 MediSaathi/
-├── frontend/               # Frontends
-│   ├── website/            # Web app (Vite + React)
-│   └── mobile/             # Mobile app (Expo / React Native)
-│   ├── src/
-│   │   ├── screens/       # App screens
-│   │   ├── services/      # API integration
-│   │   ├── styles/        # Styling and theme
-│   │   └── App.tsx        # Main app component
+├── frontend/
+│   ├── website/          # Vite + React web app
+│   │   ├── src/
+│   │   │   ├── pages/
+│   │   │   ├── components/
+│   │   │   └── api/
+│   │   └── package.json
 │   ├── package.json
 │   └── README.md
-│
-├── backend/               # FastAPI backend
+├── backend/
 │   ├── app/
 │   │   ├── routers/      # API endpoints
-│   │   ├── models/       # Data models
-│   │   ├── services/     # Business logic
-│   │   ├── config.py     # Configuration
-│   │   ├── database.py   # MongoDB connection
-│   │   └── main.py       # FastAPI app
+│   │   ├── config.py
+│   │   ├── supabase_client.py
+│   │   └── main.py
 │   ├── requirements.txt
 │   └── README.md
-│
-└── README.md             # This file
+├── Makefile
+├── package.json
+└── README.md
 ```
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- Python 3.9+
-- MongoDB Atlas account (free tier available)
-- **Smartphone with Expo Go app** (iOS/Android) - [Get it here!](https://expo.dev/client)
-- **No Android Studio or Xcode needed!** 🎉
-
-### Quick Start
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd MediSaathi
-
-# Setup everything
-make setup          # Mac/Linux
-npm run setup       # Windows/Cross-platform
-
-# Configure MongoDB
-cp backend/.env.example backend/.env
-# Edit backend/.env with your credentials
-
-# Run the app (2 separate terminals)
-make backend        # Terminal 1
-make frontend-website   # Terminal 2 (web), or make frontend-mobile (Expo)
-```
-
-**📖 For detailed setup instructions, see [SETUP.md](SETUP.md)**
-
-### Available Commands
-
-| Command | Mac/Linux | Windows/All Platforms |
-|---------|-----------|----------------------|
-| Setup project | `make setup` | `npm run setup` |
-| Run backend | `make backend` | `npm run backend` |
-| Run website | `make frontend-website` | `npm run frontend:website` |
-| Run mobile | `make frontend-mobile` | `npm run frontend:mobile` |
-| Clean dependencies | `make clean` | `npm run clean` |
-| See all commands | `make help` | `npm run help` |
 
 ---
 
-## License
+## Getting started
 
-This project is developed for educational and hackathon purposes. It is not intended to replace professional medical diagnosis or treatment.
+### Prerequisites
+
+- **Node.js 18+** and npm  
+- **Python 3.9+**  
+- **Supabase project** (auth and database)
+
+### 1. Clone and install
+
+```bash
+git clone <repository-url>
+cd MediSaathi
+
+make setup          # Mac/Linux
+# or
+npm run setup       # Windows / cross-platform
+```
+
+### 2. Configure environment
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Edit `backend/.env` with your Supabase URL/keys and any API keys (e.g. Groq, Gemini, Mistral, ElevenLabs). See `backend/.env.example` for required variables.
+
+### 3. Run the app (two terminals)
+
+**Terminal 1 — Backend (port 5050):**
+```bash
+make backend          # Mac/Linux
+npm run backend       # Windows
+```
+
+**Terminal 2 — Frontend (port 5173):**
+```bash
+make frontend-website     # Mac/Linux
+npm run frontend:website # Windows
+```
+
+- **API docs:** [http://localhost:5050/docs](http://localhost:5050/docs)  
+- **Web app:** [http://localhost:5173](http://localhost:5173)
+
+### Commands reference
+
+| Action           | Mac/Linux           | Windows / all      |
+|------------------|---------------------|--------------------|
+| Full setup       | `make setup`        | `npm run setup`    |
+| Run backend      | `make backend`      | `npm run backend`  |
+| Run website      | `make frontend-website` | `npm run frontend:website` |
+| Clean deps/cache | `make clean`        | `npm run clean`    |
+| List commands    | `make help`         | `npm run help`     |
+
+---
+
+## Deployment
+
+- **Web app:** [https://medi-saathi-fawn.vercel.app/](https://medi-saathi-fawn.vercel.app/) (Vercel)  
+- Backend is deployed separately (e.g. Vultr, Railway, Render); configure the frontend to use the production API URL.
+
+---
+
+## Impact & future scope
+
+- Improves understanding of reports, prescriptions, and doctor instructions  
+- Reduces missed medications via reminders and adherence tracking  
+- Enables faster access to the right healthcare professionals  
+
+**Future:** Wearables integration, insurance and hospital integrations, advanced AI-driven predictive insights and personalized care planning.
+
+---
+
+## Demo & resources
+
+- **Live site:** [https://medi-saathi-fawn.vercel.app/](https://medi-saathi-fawn.vercel.app/)  
+- **Presentation (PDF):** [Medisaathi.pdf](https://drive.google.com/file/d/1efmUbq0-JE87vi5LnsMSyuly4ltIw7ZC/view?usp=sharing)  
+- **Demo video:** [Google Drive](https://drive.google.com/file/d/1ua8xfadCKwKJaYQkmwdAVxEoKrEgVqIc/view?usp=drive_link)
+
+---
+
+## Troubleshooting
+
+- **Backend won’t start** — Ensure `backend/.env` has valid Supabase and API credentials. Check port 5050 is free: `lsof -i :5050` (Mac/Linux) or `netstat -ano | findstr :5050` (Windows).  
+- **Frontend can’t reach backend** — Start the backend first; for local dev, set the API base URL (e.g. `frontend/website/src/api/baseUrl.js`) to `http://localhost:5050`.
+
+---
+
+## License & disclaimer
+
+This project is for educational and hackathon use. MediSaathi supports understanding and adherence but **does not replace professional medical diagnosis or treatment**. Always consult qualified healthcare providers for medical decisions.

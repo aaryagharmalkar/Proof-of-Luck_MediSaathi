@@ -9,6 +9,7 @@ import {
   downloadPdf,
 } from "@/api/audioSummarizer";
 import { convertToWav } from "@/utils/audioConverter";
+import { useActiveMember } from "@/lib/ActiveMemberContext";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,6 +82,7 @@ const HARDCODED_CHAT_RESPONSES = {
 ======================================== */
 
 export default function MedicalSummariser() {
+  const { activeMember } = useActiveMember();
   const navigate = useNavigate();
   
   // User state
@@ -401,6 +403,33 @@ export default function MedicalSummariser() {
      AUDIO PROCESSING WITH HYDRALITE (UPDATED WITH RETRY LOGIC)
   ======================================== */
 
+
+  /* ========================================
+     MOCK SAVE / PROCESS
+     (Simulate saving summary to dashboard)
+  ======================================== */
+  const saveSummaryToDashboard = (summary) => {
+     try {
+       // Mock integration: prompt told us not to change backend logic,
+       // so we save to local storage to simulate "latest consultation" on dashboard
+       const summaryObj = {
+          title: "Consultation Summary",
+          date: new Date().toLocaleDateString(),
+          doctor: "AI Assistant",
+          advice: summary?.match(/\*\*Actionable Steps\*\*:(.*?)(?=\*\*|$)/s)?.[1]?.split('- ').filter(x=>x.trim()) || ["Review findings"],
+          warnings: ["Monitor symptoms", "Emergency if chest pain"], // Mock extraction
+          medications: summary?.match(/\*\*Prescribed Medications\*\*:(.*?)(?=\*\*|$)/s)?.[1]?.split('- ').filter(x=>x.trim()) || ["As prescribed"],
+       };
+       // Cleanup strings
+       if(Array.isArray(summaryObj.advice)) summaryObj.advice = summaryObj.advice.map(s => s.trim()).filter(s => s);
+       if(Array.isArray(summaryObj.medications)) summaryObj.medications = summaryObj.medications.map(s => s.trim()).filter(s => s);
+       
+       localStorage.setItem('activeSummary', JSON.stringify(summaryObj));
+     } catch (e) {
+       console.error("Failed to save summary alias", e);
+     }
+  };
+
   const processAudioWithHydralite = async (file) => {
     try {
       setAudioProcessing(true);
@@ -458,6 +487,8 @@ export default function MedicalSummariser() {
       console.log("✅ Summary received:", summary);
       setProcessingProgress(100);
       setAudioSummary(summary);
+      
+      saveSummaryToDashboard(summary);
 
       // Save to health records
       await saveHealthRecord("audio_summary", summary);
@@ -585,6 +616,7 @@ export default function MedicalSummariser() {
         unit: "summary",
         date: new Date().toISOString().split("T")[0],
         notes: summary,
+        member_id: activeMember?.id || null,
       });
       console.log("💾 Health record saved successfully");
     } catch (err) {
@@ -623,52 +655,61 @@ export default function MedicalSummariser() {
   ======================================== */
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 font-sans">
       {/* ========== HEADER ========== */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 lg:px-6 py-4">
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-40 bg-opacity-90 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
               <Link to="/dashboard">
-                <Button variant="ghost" size="icon" className="rounded-lg">
+                <Button variant="ghost" size="icon" className="rounded-xl hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors">
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               </Link>
               <div>
-                <h1 className="text-lg font-semibold text-gray-900">
+                <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   Medical Summariser
+                  <span className="px-2 py-0.5 rounded-full bg-teal-50 text-teal-600 text-xs font-bold border border-teal-100">AI Powered</span>
                 </h1>
-                <p className="text-xs text-gray-500">
-                  AI-powered analysis via Hydralite
-                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
-                <span>{userProfile?.full_name?.split(" ")[0]}</span>
-              </div>
+            <div className="flex items-center gap-3">
+               <div className="hidden sm:block text-right">
+                  <p className="text-sm font-semibold text-gray-900">{userProfile?.full_name}</p>
+                  <p className="text-xs text-gray-500">Member</p>
+               </div>
+               <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-600 font-bold">
+                  {userProfile?.full_name?.charAt(0) || "U"}
+               </div>
             </div>
           </div>
         </div>
       </header>
 
+
       {/* ========== MAIN CONTENT ========== */}
-      <main className="max-w-4xl mx-auto px-4 lg:px-6 py-8">
+      <main className="max-w-6xl mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           {/* Tab Navigation */}
           <motion.div
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35 }}
-            className="mb-6"
+            className="mb-8"
           >
-            <TabsList className="grid grid-cols-2 gap-2 w-full">
-              <TabsTrigger value="audio" className="flex items-center gap-2">
+            <TabsList className="bg-white p-1 rounded-2xl border border-gray-100 shadow-sm w-full max-w-md">
+              <TabsTrigger 
+                value="audio" 
+                className="flex items-center gap-2 rounded-xl data-[state=active]:bg-teal-50 data-[state=active]:text-teal-700 data-[state=active]:font-bold transition-all px-6"
+              >
                 <Mic className="w-4 h-4" />
                 Doctor Audio
               </TabsTrigger>
-              <TabsTrigger value="report" className="flex items-center gap-2">
+              <TabsTrigger 
+                value="report" 
+                className="flex items-center gap-2 rounded-xl data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:font-bold transition-all px-6"
+              >
                 <FileText className="w-4 h-4" />
                 Medical Report
               </TabsTrigger>
@@ -678,253 +719,189 @@ export default function MedicalSummariser() {
           {/* ========================================
                AUDIO TAB
           ======================================== */}
-          <TabsContent value="audio" className="space-y-4">
-            {/* Info Banner */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex gap-3">
-                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-800">
-                  <p className="font-medium mb-1">How it works:</p>
-                  <ul className="list-disc ml-4 space-y-1">
-                    <li>
-                      <strong>Record:</strong> Capture audio directly from
-                      microphone
-                    </li>
-                    <li>
-                      <strong>Upload:</strong> Choose existing audio file
-                      (MP3/WAV/M4A)
-                    </li>
-                    <li>
-                      <strong>Process:</strong> Hydralite transcribes and
-                      summarizes
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+          <TabsContent value="audio" className="flex flex-col items-center">
+            
+            {/* Header / Intro */}
+            {!isRecording && !audioProcessing && !audioSummary && !recordedAudioFile && (
+              <div className="relative group bg-white rounded-[2rem] p-8 md:p-12 border border-white shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 w-full max-w-4xl text-center">
+                {/* Background Decorative Elements */}
+                <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-teal-50 to-emerald-50 rounded-full blur-3xl -mr-32 -mt-32 opacity-70 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-50 rounded-full blur-3xl -ml-20 -mb-20 opacity-50 pointer-events-none" />
 
-            {/* Audio Input Section */}
-            {!audioSummary && !recordedAudioFile && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl p-8 text-center border card-hover"
-              >
-                <div className="flex flex-col items-center gap-4">
-                  {/* Recording Button */}
-                  {!isRecording ? (
-                    <motion.button
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={handleRecordStart}
-                      disabled={audioProcessing}
-                      className="bg-teal-500 hover:bg-teal-600 text-white px-6 py-3 rounded-full inline-flex items-center gap-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-md hover:shadow-lg"
-                    >
-                      <Mic className="w-5 h-5" />
-                      Start Recording
-                    </motion.button>
-                  ) : (
-                    <div className="space-y-3">
-                      <motion.button
-                        animate={{ scale: [1, 1.05, 1] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        onClick={handleRecordStop}
-                        className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-full inline-flex items-center gap-2 font-medium transition-colors shadow-md hover:shadow-lg"
-                      >
-                        <StopCircle className="w-5 h-5" />
-                        Stop Recording
-                      </motion.button>
-
-                      {/* Recording Indicator */}
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-2 text-red-600">
-                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                          <span className="text-sm font-medium">
-                            Recording in progress...
-                          </span>
-                        </div>
-                        <div className="text-2xl font-mono font-semibold text-gray-700">
-                          {formatTime(recordingDuration)}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Divider */}
-                  {!isRecording && (
-                    <>
-                      <div className="my-2 text-gray-400 text-sm">or</div>
-
-                      {/* File Upload */}
-                      <label className="cursor-pointer w-full max-w-md">
-                        <input
-                          hidden
-                          type="file"
-                          accept="audio/*,.mp3,.wav,.m4a,.webm,.ogg"
-                          onChange={handleAudioUpload}
-                          disabled={audioProcessing || isRecording}
+                <div className="relative z-10 flex flex-col items-center">
+                  <div className="w-20 h-20 bg-teal-50 rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-teal-100 text-teal-600">
+                      <Mic className="w-10 h-10" />
+                  </div>
+                  
+                  <h2 className="text-3xl font-extrabold text-gray-900 mb-3 tracking-tight">Turn consultation audio into insights</h2>
+                  <p className="text-gray-500 text-lg mb-10 max-w-xl mx-auto leading-relaxed">
+                     Record your doctor's visit or upload a recording. We'll generate a clear medical summary, medication list, and action plan so you never miss a detail.
+                  </p>
+                  
+                  <div className="flex flex-col sm:flex-row gap-5 items-center w-full justify-center">
+                     <Button 
+                        onClick={handleRecordStart} 
+                        size="lg" 
+                        className="bg-gray-900 hover:bg-black text-white rounded-2xl px-8 h-14 text-base font-semibold shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all w-full sm:w-auto min-w-[200px]"
+                     >
+                        <Mic className="mr-2 h-5 w-5" />
+                        Record Now
+                     </Button>
+                     
+                     <div className="relative w-full sm:w-auto min-w-[200px]">
+                        <input 
+                           type="file" 
+                           accept="audio/*" 
+                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                           onChange={handleAudioUpload}
                         />
-                        <motion.div
-                          whileHover={{
-                            scale: audioProcessing ? 1 : 1.02,
-                          }}
-                          className="border-dashed border-2 rounded-xl p-8 bg-gray-50 border-gray-300 hover:border-teal-400 transition-colors card-hover"
+                        <Button 
+                          variant="outline" 
+                          size="lg" 
+                          className="w-full rounded-2xl h-14 text-base font-semibold border-2 border-gray-100 bg-white hover:bg-gray-50 text-gray-700"
                         >
-                          {audioProcessing ? (
-                            <div className="flex flex-col items-center gap-3">
-                              <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
-                              <div className="text-sm text-gray-600 font-medium">
-                                {processingStage === "uploading" &&
-                                  "Uploading to Hydralite..."}
-                                {processingStage === "processing" &&
-                                  "Processing audio..."}
-                                {processingStage === "polling" &&
-                                  `Waiting for summary... (${retryAttempt}/${maxRetries})`}
-                                {processingStage === "transcribing" &&
-                                  "Transcribing..."}
-                                {processingStage === "summarizing" &&
-                                  "Generating summary..."}
-                                {!processingStage && "Processing..."}
-                              </div>
-                              {processingProgress > 0 && (
-                                <div className="w-full max-w-xs">
-                                  <div className="bg-gray-200 rounded-full h-2">
-                                    <div
-                                      className="bg-teal-500 h-2 rounded-full transition-all duration-300"
-                                      style={{
-                                        width: `${processingProgress}%`,
-                                      }}
-                                    />
-                                  </div>
-                                  <p className="text-xs text-gray-500 mt-1 text-center">
-                                    {Math.round(processingProgress)}%
-                                  </p>
-                                </div>
-                              )}
-                              {retryAttempt > 0 && (
-                                <p className="text-xs text-gray-500">
-                                  This may take up to 90 seconds for long recordings
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <>
-                              <Upload className="w-8 h-8 mx-auto mb-3 text-gray-400" />
-                              <div className="text-sm text-gray-600 font-medium">
-                                Upload audio file
-                              </div>
-                              <div className="text-xs text-gray-400 mt-1">
-                                MP3, WAV, M4A, WebM, or OGG (max 50MB)
-                              </div>
-                            </>
-                          )}
-                        </motion.div>
-                      </label>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            )}
-
-            {/* Recorded Audio Preview */}
-            {recordedAudioFile && !audioSummary && !audioProcessing && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl p-6 border space-y-4 card-hover"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                      <Mic className="w-5 h-5 text-teal-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {recordedAudioFile.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {(recordedAudioFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                    </div>
+                           <Upload className="mr-2 h-5 w-5" />
+                           Upload Recording
+                        </Button>
+                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleDiscardRecording}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Audio Preview Player */}
-                {audioPreviewUrl && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <audio
-                      controls
-                      src={audioPreviewUrl}
-                      className="w-full"
-                      controlsList="nodownload"
-                    />
-                  </div>
-                )}
-
-                <p className="text-sm text-gray-600">
-                  Processing will start automatically, or you can discard this
-                  recording.
-                </p>
-              </motion.div>
-            )}
-
-            {/* Processing Error */}
-            {processingError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex gap-3">
-                  <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                  <div className="text-sm text-red-800">
-                    <p className="font-medium">Processing Error:</p>
-                    <p className="mt-1">{processingError}</p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleResetAudio}
-                      className="mt-3"
-                    >
-                      Try Again
-                    </Button>
-                  </div>
+                  
+                  <p className="mt-6 text-xs text-gray-400 font-medium">Supported formats: MP3, WAV, M4A, WebM (Max 50MB)</p>
                 </div>
               </div>
             )}
 
-            {/* Audio Summary Result */}
-            {audioSummary && (
-              <>
-                <SummaryCard
-                  title="Doctor Conversation Summary"
-                  data={audioSummary}
-                />
+            {/* Recording UI */}
+            {isRecording && (
+                <div className="relative group bg-white rounded-[2rem] p-12 border border-white shadow-xl overflow-hidden text-center w-full max-w-2xl mx-auto">
+                   {/* Background Decorative Elements */}
+                   <div className="absolute top-0 left-0 w-full h-full bg-red-50/50 z-0" />
+                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                      <div className="w-96 h-96 bg-red-200 rounded-full blur-3xl animate-pulse-slow" />
+                   </div>
 
-                <div className="flex gap-3">
-                  {audioName && (
-                    <Button
-                      variant="outline"
-                      onClick={handleDownloadPdf}
-                      className="flex-1"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Download PDF Report
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    onClick={handleResetAudio}
-                    className="flex-1"
-                  >
-                    Analyze Another Audio
-                  </Button>
+                   <div className="relative z-10 flex flex-col items-center">
+                     <div className="w-32 h-32 bg-white rounded-full flex items-center justify-center mb-8 shadow-md border border-red-100 relative">
+                        <motion.div 
+                           className="absolute inset-0 rounded-full border-4 border-red-100"
+                           animate={{ scale: [1, 1.2, 1], opacity: [1, 0, 1] }}
+                           transition={{ repeat: Infinity, duration: 2 }}
+                        />
+                        <Mic className="w-12 h-12 text-red-500" />
+                        <div className="absolute -bottom-2 bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full tracking-wider animate-pulse">Live</div>
+                     </div>
+                     
+                     <h3 className="text-4xl font-bold text-gray-900 mb-3 tabular-nums tracking-tight">{formatTime(recordingDuration)}</h3>
+                     <p className="text-gray-500 font-medium mb-10 max-w-sm">Listening to your consultation... Please keep the device close to the speaker.</p>
+                     
+                     <Button 
+                        onClick={handleRecordStop}
+                        size="lg" 
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-2xl px-10 h-14 shadow-lg hover:shadow-red-200 text-lg transition-all hover:scale-105"
+                     >
+                        <StopCircle className="mr-2 w-5 h-5 fill-current" /> Stop & Process
+                     </Button>
+                   </div>
                 </div>
-              </>
+            )}
+
+            {/* Processing UI */}
+            {audioProcessing && (
+               <div className="relative group bg-white rounded-[2rem] p-12 border border-white shadow-xl overflow-hidden text-center w-full max-w-2xl mx-auto">
+                  {/* Background Decorative Elements */}
+                  <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-teal-50/50 to-blue-50/50 z-0" />
+                  
+                  <div className="relative z-10 flex flex-col items-center">
+                    <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-teal-100">
+                       <Loader2 className="w-10 h-10 text-teal-600 animate-spin" />
+                    </div>
+                    
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Analyzing Audio</h3>
+                    <p className="text-teal-600 font-medium mb-8 bg-teal-50 px-4 py-1.5 rounded-full text-sm">
+                       {processingStage === "polling" ? "Extracting medical insights..." : "Processing audio data..."}
+                    </p>
+                    
+                    <div className="w-full max-w-md mx-auto h-3 bg-gray-100 rounded-full overflow-hidden p-[2px]">
+                       <motion.div 
+                          className="h-full bg-gradient-to-r from-teal-500 to-blue-500 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${processingProgress}%` }}
+                          transition={{ duration: 0.5 }}
+                       />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-4 font-medium uppercase tracking-wide">Do not close this window</p>
+                  </div>
+               </div>
+            )}
+
+            {/* SUMMARY RESULT */}
+            {audioSummary && (
+               <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white rounded-[2rem] border border-white shadow-xl overflow-hidden w-full font-sans"
+               >
+                  <div className="bg-gradient-to-r from-gray-900 to-gray-800 p-8 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                     <div>
+                        <div className="flex items-center gap-2 text-teal-400 mb-2">
+                            <Sparkles className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Analysis Complete</span>
+                        </div>
+                        <h2 className="text-2xl font-bold tracking-tight">Consultation Summary</h2>
+                        <p className="text-gray-400 text-sm mt-1">Generated by MediSaathi AI • {new Date().toLocaleDateString()}</p>
+                     </div>
+                     <div className="flex gap-3">
+                        <Button size="sm" variant="outline" className="bg-white/10 border-white/10 hover:bg-white/20 text-white backdrop-blur-sm rounded-xl h-10 px-4" onClick={() => window.print()}>
+                           <Download className="w-4 h-4 mr-2" />
+                           Download PDF
+                        </Button>
+                     </div>
+                  </div>
+
+                  <div className="p-8 md:p-10 grid md:grid-cols-3 gap-10">
+                     <div className="md:col-span-2 space-y-8">
+                        <div className="prose prose-lg prose-headings:font-bold prose-h3:text-teal-700 prose-p:text-gray-600 max-w-none">
+                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {audioSummary}
+                           </ReactMarkdown>
+                        </div>
+                     </div>
+                     
+                     <div className="space-y-6">
+                        <div className="bg-blue-50 p-8 rounded-[2rem] border border-blue-100 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full blur-2xl -mr-16 -mt-16 opacity-50 transition-transform group-hover:scale-110" />
+                            
+                           <div className="relative z-10">
+                             <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center mb-4 shadow-sm text-blue-600">
+                                <MessageCircle className="w-6 h-6"/>
+                             </div>
+                             <h4 className="font-bold text-gray-900 text-lg mb-2">
+                                Have questions?
+                             </h4>
+                             <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+                                Not sure about a medical term? Chat with our AI assistant to clarify doubts.
+                             </p>
+                             <Button onClick={() => {
+                                navigate('/chatbot', { state: { initialQuery: "Based on my consultation summary, what are the next steps?" } });
+                             }} className="w-full bg-gray-900 hover:bg-black text-white rounded-xl h-12 shadow-lg">
+                                Chat with Summary
+                             </Button>
+                           </div>
+                        </div>
+                        
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                             setAudioSummary(null);
+                             setRecordedAudioFile(null);
+                          }}
+                          className="w-full text-gray-500 hover:text-gray-900 hover:bg-gray-50 h-12 rounded-xl"
+                        >
+                          Analyze Another Audio
+                        </Button>
+                     </div>
+                  </div>
+               </motion.div>
             )}
           </TabsContent>
 
@@ -948,77 +925,6 @@ export default function MedicalSummariser() {
                   data={reportSummary}
                 />
 
-                {/* Chat Interface */}
-                <div className="bg-white rounded-xl border overflow-hidden card-hover">
-                  <div className="p-4 border-b bg-gray-50">
-                    <div className="flex items-center gap-2">
-                      <MessageCircle className="w-4 h-4 text-teal-600" />
-                      <span className="font-medium text-gray-900">
-                        Ask about this report
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-4 h-64 overflow-y-auto space-y-3">
-                    {chatMessages.length === 0 && (
-                      <div className="text-center text-gray-400 text-sm py-8">
-                        Ask a question about the medical report
-                      </div>
-                    )}
-
-                    {chatMessages.map((m, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className={`flex ${
-                          m.role === "user" ? "justify-end" : "justify-start"
-                        }`}
-                      >
-                        <span
-                          className={`inline-block px-4 py-2 rounded-lg max-w-xs lg:max-w-md ${
-                            m.role === "user"
-                              ? "bg-teal-500 text-white"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {m.content}
-                        </span>
-                      </motion.div>
-                    ))}
-
-                    {isAssistantTyping && (
-                      <div className="flex justify-start">
-                        <span className="inline-block px-4 py-2 rounded-lg bg-gray-100 text-gray-600 text-sm">
-                          Assistant is typing...
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4 border-t bg-gray-50">
-                    <div className="flex gap-2">
-                      <Input
-                        value={chatInput}
-                        onChange={(e) => setChatInput(e.target.value)}
-                        onKeyPress={(e) =>
-                          e.key === "Enter" && handleChatSend()
-                        }
-                        placeholder="Type your question..."
-                        className="flex-1"
-                        disabled={isAssistantTyping}
-                      />
-                      <Button
-                        size="icon"
-                        onClick={handleChatSend}
-                        className="bg-teal-500 hover:bg-teal-600"
-                        disabled={!chatInput.trim() || isAssistantTyping}
-                      >
-                        <Send className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
 
                 <Button
                   variant="outline"
@@ -1080,24 +986,31 @@ function SummaryCard({ title, data }) {
         ref={cardRef}
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl p-6 border space-y-4 card-hover"
+        className="relative group bg-white rounded-[2rem] p-8 border border-white shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 font-sans"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-green-600">
-            <Check className="w-5 h-5" />
-            <span className="font-semibold text-lg">{title}</span>
+        {/* Background Decorative Elements */}
+        {title.includes("Summary") ? (
+           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-green-50 to-emerald-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60 pointer-events-none" />
+        ) : (
+           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60 pointer-events-none" />
+        )}
+        
+        <div className="relative z-10 flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm ${title.includes("Summary") ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-900'}`}>
+                <FileText className="w-6 h-6" />
+            </div>
+            <span className="font-bold text-xl text-gray-900 tracking-tight">{title}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownloadSummaryPdf}>
-              <Download className="w-4 h-4 mr-2" />
-              Download PDF
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={handleDownloadSummaryPdf} className="rounded-xl border-gray-200 hover:bg-gray-50 hover:text-gray-900 transition-colors">
+            <Download className="w-4 h-4 mr-2" />
+            PDF
+          </Button>
         </div>
 
-        <div className="prose prose-sm max-w-none">
-          <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+        <div className="relative z-10 prose prose-lg prose-headings:font-bold prose-p:text-gray-600 max-w-none">
+          <div className="whitespace-pre-wrap leading-relaxed">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{data}</ReactMarkdown>
           </div>
         </div>
@@ -1111,48 +1024,55 @@ function SummaryCard({ title, data }) {
       ref={cardRef}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-xl p-6 border space-y-4 card-hover"
+      className="relative group bg-white rounded-[2rem] p-8 border border-white shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-500 font-sans"
     >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-green-600">
-          <Check className="w-5 h-5" />
-          <span className="font-semibold text-lg">{title}</span>
+      <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-teal-50 to-emerald-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-60 pointer-events-none" />
+
+      <div className="relative z-10 flex items-center justify-between mb-8">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-teal-50 rounded-2xl flex items-center justify-center shadow-sm text-teal-600">
+             <Check className="w-6 h-6" />
+          </div>
+          <span className="font-bold text-xl text-gray-900 tracking-tight">{title}</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleDownloadSummaryPdf}>
-            <Download className="w-4 h-4 mr-2" />
-            Download PDF
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={handleDownloadSummaryPdf} className="rounded-xl border-gray-200 hover:bg-gray-50">
+          <Download className="w-4 h-4 mr-2" />
+          Download PDF
+        </Button>
       </div>
 
-      <div className="space-y-4">
+      <div className="relative z-10 space-y-6">
         {Object.entries(data).map(([key, value], idx) => (
           <motion.div
             key={key}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05 }}
-            className="border-l-2 border-teal-200 pl-4"
+            className="group/item"
           >
-            <p className="font-semibold capitalize text-sm text-gray-700 mb-1">
-              {key.replace(/_/g, ' ')}
-            </p>
+            <div className="flex items-center gap-2 mb-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-teal-500 group-hover/item:scale-125 transition-transform" />
+                <p className="font-bold capitalize text-sm text-gray-900 tracking-wide">
+                {key.replace(/_/g, ' ')}
+                </p>
+            </div>
 
-            {Array.isArray(value) ? (
-              <ul className="list-disc ml-4 text-gray-600 space-y-1">
-                {value.map((v, i) => (
-                  <li key={i} className="text-sm">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(v)}</ReactMarkdown>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-gray-600 text-sm leading-relaxed">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(value)}</ReactMarkdown>
-              </div>
-            )}
+            <div className="pl-3.5 border-l-2 border-gray-100 group-hover/item:border-teal-100 transition-colors">
+                {Array.isArray(value) ? (
+                <ul className="list-none space-y-2">
+                    {value.map((v, i) => (
+                    <li key={i} className="text-gray-600 text-base leading-relaxed">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(v)}</ReactMarkdown>
+                    </li>
+                    ))}
+                </ul>
+                ) : (
+                <div className="text-gray-600 text-base leading-relaxed">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{String(value)}</ReactMarkdown>
+                </div>
+                )}
+            </div>
           </motion.div>
         ))}
       </div>

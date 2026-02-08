@@ -7,7 +7,9 @@ import QuickActions from "@/components/dashboard/QuickActions";
 import EmptyStateCard from "@/components/dashboard/EmptyStateCard";
 import UpcomingCard from "@/components/dashboard/UpcomingCard";
 import EmergencyButton from "@/components/ui/EmergencyButton";
-import { Calendar, Pill, FileText, Loader2 } from "lucide-react";
+import ConsultationSummaryCard from "@/components/dashboard/ConsultationSummaryCard";
+import AIAskBar from "@/components/dashboard/AIAskBar";
+import { Calendar, Pill, FileText, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import api from "@/api/apiClient";
 import { useAuth } from "@/lib/AuthContext";
@@ -29,9 +31,10 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [activeMember]);
 
   const loadData = async () => {
+    setIsLoading(true);
     try {
       // User profile (hackathon-safe)
 let profileData = null;
@@ -47,27 +50,29 @@ try {
 }
 setProfile(profileData);
 
-
+      const params = activeMember?.id ? { member_id: activeMember.id } : {};
       
-      // Appointments (mock + backend safe)
-// Always read localStorage (hackathon source of truth)
-const localAppts = JSON.parse(
-  localStorage.getItem("appointments") || "[]"
-);
-
-// Try backend, but don't trust it yet
-// 🔐 Hackathon mode: localStorage is the single source of truth
-setAppointments(localAppts);
-
-
-
+      // Appointments (load from Supabase)
+      try {
+        const { data: appts } = await api.get("/appointments", { params });
+        setAppointments(Array.isArray(appts) ? appts : []);
+      } catch (err) {
+        console.error("Failed to load appointments:", err);
+        // Fallback to localStorage if API fails (only for main user)
+        if (!activeMember?.id) {
+          const localAppts = JSON.parse(localStorage.getItem("appointments") || "[]");
+          setAppointments(localAppts);
+        } else {
+          setAppointments([]);
+        }
+      }
 
       // Medicines
-      const { data: meds } = await api.get("/medicines");
+      const { data: meds } = await api.get("/medicines", { params });
       setMedicines(Array.isArray(meds) ? meds : (meds?.medicines ?? []));
 
       // Health records
-      const { data: recsRes } = await api.get("/health/records");
+      const { data: recsRes } = await api.get("/health/records", { params });
       setRecords(recsRes?.records ?? (Array.isArray(recsRes) ? recsRes : []));
     } catch (err) {
       console.error("Dashboard load failed:", err);
@@ -97,69 +102,79 @@ setAppointments(localAppts);
 
   const activeMedicines = medicines.filter((m) => m.active);
 
-  // Animation variants for staggered entrance
+  // Animation variants
   const containerVariants = {
     hidden: {},
-    show: { transition: { staggerChildren: 0.08 } }
+    show: { transition: { staggerChildren: 0.05 } }
   };
   const itemVariant = {
-    hidden: { opacity: 0, y: 12 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: 'easeOut' } }
+    hidden: { opacity: 0, y: 10 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.3 } }
   };
 
   /* ------------------ UI ------------------ */
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 font-sans pb-12">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 bg-gradient-to-r from-teal-50/30 to-white">
-        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
-          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <p className="text-gray-500">Hello 👋</p>
-<motion.h1
-  className="text-2xl font-bold text-gray-900"
-  initial={{ scale: 0.99 }}
-  animate={{ scale: 1 }}
-  transition={{ duration: 0.4 }}
->
-  {activeMemberName
-    ? `How’s ${activeMemberName} feeling today?`
-    : "Hope you're feeling well today"}
-</motion.h1>
-
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-40 bg-opacity-90 backdrop-blur-sm">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <motion.div>
+            <p className="text-gray-500 text-sm font-medium">Welcome back</p>
+            <h1 className="text-xl font-bold text-gray-900">
+              {activeMemberName
+                ? activeMemberName
+                : profile?.full_name || "Guest"}
+            </h1>
           </motion.div>
 
-          <motion.div
-            className="cursor-pointer"
-            onClick={() => navigate("/profile")}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.98 }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            <AvatarImage avatar={profile?.avatar_id} className="w-12 h-12" />
-          </motion.div>
+          <Link to="/profile">
+             <AvatarImage avatar={profile?.avatar_id} className="w-10 h-10 border border-gray-200" />
+          </Link>
         </div>
       </div>
       
 
       {/* Main */}
-      <motion.main className="max-w-7xl mx-auto px-6 py-8" variants={containerVariants} initial="hidden" animate="show">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left */}
-          <div className="lg:col-span-2 space-y-6">
+      <motion.main 
+        className="max-w-6xl mx-auto px-6 py-8 space-y-12" 
+        variants={containerVariants} 
+        initial="hidden" 
+        animate="show"
+      >
+        
+        {/* 1. Hero / Consultation Summary */}
+        <motion.section variants={itemVariant}>
+            <ConsultationSummaryCard summary={null} />
+        </motion.section>
+
+        {/* 2. AI Ask Bar */}
+        <motion.section variants={itemVariant} className="flex flex-col items-center max-w-4xl mx-auto w-full">
+            <div className="w-full text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
+                    <Sparkles className="w-6 h-6 text-teal-500" />
+                    How can I help you?
+                </h2>
+                <p className="text-gray-500">Ask about symptoms, medicines, or reports</p>
+            </div>
+            <AIAskBar />
+        </motion.section>
+
+        {/* 3. Dashboard Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Left Column (Calendar) */}
+          <motion.div variants={itemVariant} className="lg:col-span-8 space-y-8">
             <motion.div variants={itemVariant}>
               <HealthCalendar
                 appointments={scheduledAppointments}
                 medicines={medicines}
-                compact
+                compact={false}
               />
             </motion.div>
 
-            {/* Appointments */}
-            <motion.div variants={itemVariant}>
-              <div className="flex items-center justify-between mb-3">
+            {/* Upcoming Appointments Section */}
+            <motion.div variants={itemVariant} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm transition-all hover:shadow-md">
+              <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-gray-900">Upcoming Appointments</h3>
 <Link to="/appointments" className="text-sm text-teal-600">
   View all
@@ -179,79 +194,64 @@ setAppointments(localAppts);
                 <motion.div variants={itemVariant}>
                   <EmptyStateCard
                     icon={Calendar}
-                    title="No appointments"
-                    description="Schedule your first doctor visit"
-                    actionLabel="Add Appointment"
-                    actionPage="doctor-scheduler"
+                    title="No Appointments"
+                    description="Schedule your first visit"
+                    actionText="Book Now"
+                    link="doctor-scheduler"
                     color="blue"
                   />
                 </motion.div>
               )}
             </motion.div>
-          </div>
+          </motion.div>
 
-          {/* Right */}
-          <div className="space-y-6">
+            {/* Right Column (Quick Actions & Meds) */}
+            <div className="lg:col-span-4 space-y-6">
             <motion.div variants={itemVariant}>
               <QuickActions />
             </motion.div>
 
-            {/* Medicines */}
-            <motion.div variants={itemVariant}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-900">Active Medicines</h3>
-                <Link to={createPageUrl('medicines')} className="text-sm text-teal-600">View all</Link>
-              </div>
+              {/* Medicines List */}
+              <motion.div variants={itemVariant} className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                          <Pill className="w-5 h-5 text-purple-500" /> Active Meds
+                      </h3>
+                      <Link to={createPageUrl('medicines')} className="text-sm font-semibold text-teal-600 hover:text-teal-700">Manage</Link>
+                  </div>
 
-              {activeMedicines.length ? (
-                <div className="space-y-3">
-                  {activeMedicines.slice(0, 3).map((med, idx) => (
-  <motion.div key={med.id || med._id || idx}>
-    <UpcomingCard type="medicine" data={med} />
-  </motion.div>
-))}
+                 {activeMedicines.length > 0 ? (
+                    <EmptyStateCard 
+                       icon={Pill} 
+                       title="Active Medicines" 
+                       description={`${activeMedicines.length} in progress`} 
+                       actionText="View List"
+                       link="medicines"
+                       color="purple"
+                    />
+                 ) : (
+                    <EmptyStateCard 
+                       icon={Pill} 
+                       title="No Medicines" 
+                       description="Nothing active" 
+                       actionText="Add Meds"
+                       link="medicines"
+                       color="purple"
+                    />
+                 )}
+              </motion.div>
 
-                </div>
-              ) : (
-                <motion.div variants={itemVariant}>
-                  <EmptyStateCard
-                    icon={Pill}
-                    title="No medicines"
-                    description="Add your prescriptions"
-                    actionLabel="Add Medicine"
-                    actionPage="medicines"
-                    color="teal"
+              {/* Reports / Records */}
+              <motion.div variants={itemVariant}>
+                  <EmptyStateCard 
+                     icon={FileText} 
+                     title="Medical Records" 
+                     description="Upload reports for AI analysis." 
+                     actionText="Upload" 
+                     link="medical-summariser"
+                     color="teal"
                   />
-                </motion.div>
-              )}
-            </motion.div>
-
-            {/* Records */}
-            <motion.div variants={itemVariant}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-900">Health Records</h3>
-                <Link to={createPageUrl('history')} className="text-sm text-teal-600">View all</Link>
-              </div>
-
-              {records.length ? (
-                <div className="bg-white rounded-xl p-4 border">
-                  <p className="text-sm text-gray-600">
-                    {records.length} records uploaded
-                  </p>
-                </div>
-              ) : (
-                <motion.div variants={itemVariant}>
-                  <EmptyStateCard
-                    icon={FileText}
-                    title="No reports"
-                    description="Upload your medical reports"
-                    actionLabel="Upload Report"
-                    actionPage="medical-summariser"
-                    color="purple"
-                  />
-                </motion.div>
-              )}
-            </motion.div>
+              </motion.div>
           </div>
         </div>
       </motion.main>

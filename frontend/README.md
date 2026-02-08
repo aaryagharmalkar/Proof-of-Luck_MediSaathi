@@ -1,13 +1,12 @@
-# MediSaathi Frontends
+# MediSaathi Frontend
 
-Two separate frontend applications:
+Web application for MediSaathi:
 
 | App      | Path              | Stack        | Run locally                    |
 |----------|-------------------|--------------|---------------------------------|
 | **Website** | `frontend/website/` | Vite + React | `make frontend-website` or `npm run frontend:website` |
-| **Mobile**  | `frontend/mobile/`  | Expo (React Native) | `make frontend-mobile` or `npm run frontend:mobile` |
 
-## Setup (both)
+## Setup
 
 From repo root:
 
@@ -16,16 +15,14 @@ make frontend-setup
 # or: npm run frontend:setup
 ```
 
-Or per app:
+Or website only:
 
 ```bash
-make frontend-website-setup   # website only
-make frontend-mobile-setup    # mobile only
+make frontend-website-setup
 ```
 
 ## Run
 
 - **Website** (default for `make frontend`): `make frontend-website` or `cd website && npm run dev`
-- **Mobile**: `make frontend-mobile` or `cd mobile && npx expo start --clear`
 
 See root **Makefile** and **package.json** for all commands.

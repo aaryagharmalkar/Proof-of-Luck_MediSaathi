@@ -1,12 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional, Dict
 from datetime import datetime
 
 from app.supabase_client import supabase
+from app.config import settings
+from supabase import create_client
 from app.controllers.auth_controller import signup_user, signin_user, get_current_user
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class AuthRequest(BaseModel):
@@ -32,6 +36,30 @@ async def signup(data: AuthRequest):
 async def signin(data: AuthRequest):
     return await signin_user(data.email, data.password)
 
+@router.post("/auth/register-doctor")
+async def register_doctor(current_user=Depends(get_current_user)):
+    """Mark current user as doctor and ensure a doctors row exists (for onboarding)."""
+    try:
+        name = (current_user.user_metadata or {}).get("name") or (current_user.email or "").split("@")[0] or "Doctor"
+        try:
+            prof = supabase.table("profiles").select("full_name").eq("user_id", current_user.id).maybe_single().execute()
+            if prof.data and prof.data.get("full_name"):
+                name = prof.data["full_name"]
+        except Exception:
+            pass
+        existing = supabase.table("doctors").select("id").eq("user_id", current_user.id).maybe_single().execute()
+        if not existing.data:
+            supabase.table("doctors").insert({
+                "user_id": current_user.id,
+                "full_name": name,
+                "email": current_user.email or "",
+                "onboarding_completed": False,
+            }).execute()
+        return {"success": True, "message": "Registered as doctor. Complete onboarding."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/auth/logout")
 async def logout_user(user=Depends(get_current_user)):
     supabase.auth.sign_out()
@@ -43,13 +71,29 @@ async def get_me(current_user=Depends(get_current_user)):
 
 
 @router.get("/auth/profile")
-async def get_profile(current_user=Depends(get_current_user)):
+async def get_profile(current_user=Depends(get_current_user), authorization: str = Header(None)):
     """Get the current user's profile from profiles table."""
     try:
         result = supabase.table("profiles").select("*").eq("user_id", current_user.id).maybe_single().execute()
-        return result.data or {}
+        
+        # If profile doesn't exist, create a default one to prevent 500 errors
+        if not result.data:
+            new_profile = {
+                "user_id": current_user.id,
+                "full_name": (current_user.user_metadata or {}).get("name") or "",
+                "setup_completed": False
+            }
+            create_res = supabase.table("profiles").insert(new_profile).execute()
+            return create_res.data[0] if create_res.data else {}
+
+        return result.data
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.warning("Error fetching profile: %s", e)
+        return {
+            "user_id": current_user.id,
+            "full_name": (current_user.user_metadata or {}).get("name") or "",
+            "setup_completed": False
+        }
 
 
 class ProfileUpdateRequest(BaseModel):
@@ -66,19 +110,23 @@ class ProfileUpdateRequest(BaseModel):
 
 
 @router.patch("/auth/profile")
-async def update_profile(data: ProfileUpdateRequest, current_user=Depends(get_current_user)):
+async def update_profile(data: ProfileUpdateRequest, current_user=Depends(get_current_user), authorization: str = Header(None)):
     """Partially update the current user's profile."""
     try:
+        token = authorization.split(" ")[1]
+        client = create_client(settings.supabase_url, settings.supabase_key)
+        client.postgrest.auth(token)
+
         update_data = data.model_dump(exclude_unset=True)
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
         update_data["updated_at"] = datetime.utcnow().isoformat()
-        result = supabase.table("profiles").update(update_data).eq("user_id", current_user.id).execute()
+        result = client.table("profiles").update(update_data).eq("user_id", current_user.id).execute()
         if not result.data:
             # No row yet: upsert with user_id
             update_data["user_id"] = current_user.id
-            supabase.table("profiles").upsert(update_data, on_conflict="user_id").execute()
-            result = supabase.table("profiles").select("*").eq("user_id", current_user.id).single().execute()
+            client.table("profiles").upsert(update_data, on_conflict="user_id").execute()
+            result = client.table("profiles").select("*").eq("user_id", current_user.id).maybe_single().execute()
         return result.data[0] if result.data else {}
     except HTTPException:
         raise

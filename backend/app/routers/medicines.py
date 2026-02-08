@@ -1,26 +1,81 @@
-import os
 import json
+import logging
 import re
 import io
-from typing import List
+from typing import List, Optional
+from datetime import date
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Query
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from PIL import Image
-from dotenv import load_dotenv
 import google.generativeai as genai
 
+from app.config import settings
+from app.supabase_client import supabase
 from app.controllers.auth_controller import get_current_user
+from app.rag_store import store_patient_document
 
-# Load environment
-load_dotenv()
+if (settings.gemini_api_key or "").strip():
+    genai.configure(api_key=settings.gemini_api_key)
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel("gemini-2.5-flash")
+logger = logging.getLogger(__name__)
+
+# List of models to try in order of preference (Lite models first for better quota)
+FALLBACK_MODELS = [
+    "gemini-2.0-flash-lite-001",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash-lite",
+    "gemini-flash-latest",
+    "gemini-2.5-flash"
+]
 
 router = APIRouter(prefix="/medicines", tags=["medicines"])
+
+# ===============================
+# MODELS
+# ===============================
+
+class MedicineCreate(BaseModel):
+    name: str
+    dosage: Optional[str] = None
+    form: Optional[str] = "tablet"
+    frequency: Optional[str] = "Daily"
+    intake_times: Optional[List[str]] = []
+    custom_times: Optional[List[str]] = []
+    dose_count: Optional[float] = 1
+    unit: Optional[str] = "tablet"
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    quantity_current: Optional[float] = None
+    quantity_unit: Optional[str] = None
+    refill_reminder_days: Optional[int] = None
+    is_critical: bool = False
+    is_active: bool = True
+    notes: Optional[str] = None
+    member_id: Optional[str] = None  # If None, medicine is for the logged-in user
+
+
+class MedicineUpdate(BaseModel):
+    name: Optional[str] = None
+    dosage: Optional[str] = None
+    form: Optional[str] = None
+    frequency: Optional[str] = None
+    intake_times: Optional[List[str]] = None
+    custom_times: Optional[List[str]] = None
+    dose_count: Optional[float] = None
+    unit: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    quantity_current: Optional[float] = None
+    quantity_unit: Optional[str] = None
+    refill_reminder_days: Optional[int] = None
+    is_critical: Optional[bool] = None
+    is_active: Optional[bool] = None
+    notes: Optional[str] = None
+
+class MedicineInfoRequest(BaseModel):
+    name: str
 
 # ===============================
 # HELPERS
@@ -122,10 +177,10 @@ IMPORTANT: Return ONLY the JSON array. No other text.
         
         return medicines
     except json.JSONDecodeError as e:
-        print(f"JSON decode error: {str(e)}")
+        logger.warning("JSON decode error: %s", e)
         return []
     except Exception as e:
-        print(f"Error extracting from image: {str(e)}")
+        logger.warning("Error extracting from image: %s", e)
         return []
 
 
@@ -222,7 +277,7 @@ def extract_medicines(file_bytes: bytes, filename: str) -> List[dict]:
             medicines = _extract_from_image(image)
             return _validate_and_fix_medicines(medicines)
         except Exception as e:
-            print(f"Error processing image: {str(e)}")
+            logger.warning("Error processing image: %s", e)
             return []
 
     # PDF - Using PyMuPDF (fitz)
@@ -234,7 +289,7 @@ def extract_medicines(file_bytes: bytes, filename: str) -> List[dict]:
             pdf_document = fitz.open(stream=file_bytes, filetype="pdf")
             
             if pdf_document.page_count == 0:
-                print("PDF has no pages")
+                logger.warning("PDF has no pages")
                 pdf_document.close()
                 return []
             
@@ -257,7 +312,7 @@ def extract_medicines(file_bytes: bytes, filename: str) -> List[dict]:
                     all_medicines.extend(meds)
                     
                 except Exception as e:
-                    print(f"Error processing PDF page {page_num + 1}: {str(e)}")
+                    logger.warning("Error processing PDF page %s: %s", page_num + 1, e)
                     continue
             
             pdf_document.close()
@@ -272,10 +327,64 @@ def extract_medicines(file_bytes: bytes, filename: str) -> List[dict]:
             return _validate_and_fix_medicines(medicines)
             
         except Exception as e:
-            print(f"Error converting PDF: {str(e)}")
+            logger.warning("Error converting PDF: %s", e)
             return []
 
     return []
+
+
+# ===============================
+# PYDANTIC MODELS
+# ===============================
+
+
+class MedicineCreate(BaseModel):
+    member_id: Optional[str] = None
+    name: str
+    dosage: Optional[str] = None
+    form: Optional[str] = None
+    frequency: Optional[str] = None
+    intake_times: Optional[List[str]] = None
+    custom_times: Optional[List[str]] = None
+    dose_count: Optional[float] = 1
+    unit: Optional[str] = "tablet"
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    quantity_current: Optional[float] = None
+    quantity_unit: Optional[str] = None
+    refill_reminder_days: Optional[int] = None
+    is_critical: bool = False
+    is_active: bool = True
+    daily_status: Optional[dict] = None
+    notes: Optional[str] = None
+
+
+class MedicineUpdate(BaseModel):
+    name: Optional[str] = None
+    dosage: Optional[str] = None
+    form: Optional[str] = None
+    frequency: Optional[str] = None
+    intake_times: Optional[List[str]] = None
+    custom_times: Optional[List[str]] = None
+    dose_count: Optional[float] = None
+    unit: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    quantity_current: Optional[float] = None
+    quantity_unit: Optional[str] = None
+    refill_reminder_days: Optional[int] = None
+    is_critical: Optional[bool] = None
+    is_active: Optional[bool] = None
+    daily_status: Optional[dict] = None
+    notes: Optional[str] = None
+
+
+def _ensure_member_belongs_to_user(user_id: str, member_id: Optional[str]) -> None:
+    if not member_id:
+        return
+    res = supabase.table("members").select("id").eq("id", member_id).eq("user_id", user_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=400, detail="Invalid member_id or not your family member")
 
 
 # ===============================
@@ -284,9 +393,206 @@ def extract_medicines(file_bytes: bytes, filename: str) -> List[dict]:
 
 
 @router.get("")
-def list_medicines(user=Depends(get_current_user)):
-    """List medicines for the current user. Placeholder until stored in DB."""
-    return []
+async def list_medicines(
+    current_user=Depends(get_current_user),
+    member_id: Optional[str] = Query(None, description="Filter by family member; omit for 'Me'"),
+    active_only: bool = Query(True, description="Only active medicines"),
+):
+    """List medicines for the current user, optionally for a family member. Removes from DB any whose end_date is past (dosage complete)."""
+    try:
+        today = date.today().isoformat()
+        # Remove completed courses (end_date in the past) from the database for this user
+        try:
+            supabase.table("medicines").delete().eq("user_id", current_user.id).lt("end_date", today).execute()
+        except Exception:
+            pass  # ignore cleanup errors (e.g. no end_date or no rows)
+        q = supabase.table("medicines").select("*").eq("user_id", current_user.id)
+        if member_id and str(member_id).strip().lower() not in ("", "me", "null"):
+            q = q.eq("member_id", member_id)
+        else:
+            q = q.is_("member_id", "null")
+        if active_only:
+            q = q.eq("is_active", True)
+        res = q.order("created_at", desc=True).execute()
+        return res.data or []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("")
+async def create_medicine(payload: MedicineCreate, current_user=Depends(get_current_user)):
+    """Add a medicine (for self or a family member)."""
+    try:
+        _ensure_member_belongs_to_user(current_user.id, payload.member_id)
+        data = {
+            "user_id": current_user.id,
+            "member_id": payload.member_id if payload.member_id else None,
+            "name": payload.name,
+            "dosage": payload.dosage,
+            "form": payload.form,
+            "frequency": payload.frequency,
+            "intake_times": payload.intake_times or [],
+            "custom_times": payload.custom_times or [],
+            "dose_count": payload.dose_count,
+            "unit": payload.unit,
+            "start_date": payload.start_date,
+            "end_date": payload.end_date,
+            "quantity_current": payload.quantity_current,
+            "quantity_unit": payload.quantity_unit,
+            "refill_reminder_days": payload.refill_reminder_days,
+            "is_critical": payload.is_critical,
+            "is_active": payload.is_active,
+            "daily_status": payload.daily_status or {},
+            "notes": payload.notes,
+        }
+        res = supabase.table("medicines").insert(data).execute()
+        if not res.data:
+            raise HTTPException(status_code=500, detail="Failed to create medicine")
+        try:
+            created = res.data[0]
+            summary = (
+                f"Prescription: {created.get('name')} "
+                f"({created.get('dosage') or 'dosage not specified'}), "
+                f"{created.get('frequency') or 'frequency not specified'}. "
+                f"Form: {created.get('form') or 'unspecified'}. "
+                f"Notes: {created.get('notes') or 'none'}."
+            )
+            store_patient_document(
+                user_id=current_user.id,
+                member_id=created.get("member_id"),
+                content=summary,
+                metadata={
+                    "source": "prescription",
+                    "medicine_id": created.get("id"),
+                },
+            )
+        except Exception:
+            pass
+        return res.data[0]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{medicine_id}")
+async def get_medicine(medicine_id: str, current_user=Depends(get_current_user)):
+    """Get a specific medicine by ID."""
+    try:
+        result = supabase.table("medicines").select("*").eq("id", medicine_id).eq("user_id", current_user.id).maybe_single().execute()
+        if not result.data:
+            raise HTTPException(status_code=404, detail="Medicine not found")
+        return result.data
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/{medicine_id}")
+async def update_medicine(medicine_id: str, payload: MedicineUpdate, current_user=Depends(get_current_user)):
+    """Update a medicine (partial)."""
+    try:
+        existing = supabase.table("medicines").select("id").eq("id", medicine_id).eq("user_id", current_user.id).maybe_single().execute()
+        if not existing.data:
+            raise HTTPException(status_code=404, detail="Medicine not found")
+        update_data = payload.model_dump(exclude_unset=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        res = supabase.table("medicines").update(update_data).eq("id", medicine_id).eq("user_id", current_user.id).execute()
+        return res.data[0] if res.data else {}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{medicine_id}")
+async def delete_medicine(medicine_id: str, current_user=Depends(get_current_user)):
+    """Delete a medicine (e.g. when course is complete or user removes it)."""
+    try:
+        res = supabase.table("medicines").delete().eq("id", medicine_id).eq("user_id", current_user.id).execute()
+        if not res.data:
+            raise HTTPException(status_code=404, detail="Medicine not found")
+        return {"ok": True, "deleted": medicine_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class MedicineInfoRequest(BaseModel):
+    name: str
+
+@router.post("/info")
+async def get_medicine_info(
+    request: MedicineInfoRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Get detailed information about a medicine using Gemini AI.
+    """
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="Gemini API key not configured")
+
+    prompt = f"""
+    You are a medical assistant. Provide detailed information about the medicine "{request.name}". 
+    Include the following fields in JSON format:
+    - uses: List of common uses.
+    - side_effects: List of common side effects.
+    - warnings: Important warnings or contraindications (e.g., allergies, pregnancy).
+    - dietary_restrictions: Any food or drink to avoid.
+    - usage_instructions: General advice on how to take it (e.g., with food).
+
+    Return ONLY raw JSON, no markdown.
+    """
+    
+    last_exception = None
+    
+    # Try each model in the fallback list
+    for model_name in FALLBACK_MODELS:
+        try:
+            logger.debug("Attempting with model: %s", model_name)
+            current_model = genai.GenerativeModel(model_name)
+            
+            # Relax safety settings for medical context
+            response = current_model.generate_content(
+                prompt,
+                safety_settings=[
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                ]
+            )
+            
+            try:
+                text = response.text
+                cleaned_json = _clean_json(text)
+                data = json.loads(cleaned_json)
+                return data # Success!
+            except ValueError:
+                logger.debug("Model %s blocked response", model_name)
+                continue # Try next model
+                
+        except Exception as e:
+            error_msg = str(e)
+            logger.warning("Model %s failed: %s", model_name, error_msg)
+            last_exception = e
+            # If 429 (Quota) or 404 (Not Found), we continue to next model
+            if "429" in error_msg or "Quota" in error_msg or "404" in error_msg:
+                continue
+            # For other errors, we might stop or continue. Let's continue to be safe.
+            continue
+            
+    logger.warning("All models failed for prescription extraction")
+    error_detail = str(last_exception) if last_exception else "All AI models are currently busy or unavailable."
+    
+    # If it was a quota error, ensure we send 429 back so frontend shows the friendly limits message
+    if last_exception and ("429" in str(last_exception) or "Quota" in str(last_exception) or "limit" in str(last_exception)):
+         raise HTTPException(status_code=429, detail="Daily AI Limit Reached")
+         
+    raise HTTPException(status_code=500, detail=f"AI Error: {error_detail}")
 
 
 @router.post("/extract-file")
@@ -294,7 +600,7 @@ async def extract_prescription(file: UploadFile = File(...)):
     """Extract medicines from prescription image or PDF"""
     try:
         # Check if Gemini API key is configured
-        if not GEMINI_API_KEY:
+        if not (settings.gemini_api_key or "").strip():
             raise HTTPException(
                 status_code=500,
                 detail="Prescription extraction service is not configured (GEMINI_API_KEY missing)"
@@ -347,10 +653,7 @@ async def extract_prescription(file: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Unexpected error in extract_prescription: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        
+        logger.exception("Unexpected error in extract_prescription")
         raise HTTPException(
             status_code=500, 
             detail=f"Error processing file: {str(e)}"
